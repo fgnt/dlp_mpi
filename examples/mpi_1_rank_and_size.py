@@ -5,7 +5,7 @@ python mpi.py
 
 # When you have MPI:
 mpiexec -np 3 python mpi.py
-""""
+"""
 
 from nt.utils.mpi import COMM, RANK, SIZE
 
