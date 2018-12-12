@@ -1,4 +1,4 @@
-from nt.utils.mpi import COMM, RANK, SIZE, MASTER, IS_MASTER, map_unordered
+from paderbox.utils.mpi import COMM, RANK, SIZE, MASTER, IS_MASTER, map_unordered
 import time
 import numpy as np
 
