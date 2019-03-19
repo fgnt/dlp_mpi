@@ -1,10 +1,10 @@
 """Call instructions:
 
 # When you do not have MPI:
-python mpi.py
+python mpi_1_rank_and_size.py
 
 # When you have MPI:
-mpiexec -np 3 python mpi.py
+mpiexec -np 3 python mpi_1_rank_and_size.py
 """
 
 from paderbox.utils.mpi import COMM, RANK, SIZE
