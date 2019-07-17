@@ -30,18 +30,21 @@ __all__ = [
 try:
     from mpi4py import MPI
     if MPI.COMM_WORLD.size > 1:
-        if 'PC2SYSNAME' in os.environ:
+        if False:
+            # Usually data-level parallelism is better than low-level
+            # parallelism, i.e. openmp
+            # => force numpy (and other libs) to work on a single core
             pass
             # Tensorflow may read the environment variables. And since it is
             # difficult to force TF to a single thread, allow higher ncpus on
-            # PC2 for Tensorflow. Furthermore, TF has better concepts to use
-            # multicores.
+            # the HPC sytsem PC2 for Tensorflow. Furthermore, TF has better
+            # concepts to use multicores.
         else:
             ensure_single_thread_numeric()
 except ImportError:
-
     if 'PC2SYSNAME' in os.environ:
-        # CCS indicate PC2
+        # No fallback to single core, when the code is executed on our HPC
+        # system (PC2).
         # PC2SYSNAME is 'OCULUS' or 'Noctua'
         raise
 
@@ -66,6 +69,10 @@ except ImportError:
             f'Try to deinstall mpi4py and install it with "pip install mpi4py"'
         )
         raise
+
+    # Fallback to a dummy mpi implementation to run on platforms that do not
+    # support mpi or computers that do not need mpi, e.g. on a development
+    # notebook mpi may not be installed.
 
     class DUMMY_COMM_WORLD:
         size = 1
@@ -96,14 +103,25 @@ IS_MASTER = (RANK == MASTER)
 
 
 def barrier():
+    """
+    Blocks all processes until all processes reach this barrier.
+    So this is a sync point.
+    """
     COMM.Barrier()
 
 
 def bcast(obj, root: int=MASTER):
+    """
+    Pickls the obj and send it from the root to all processes.
+    """
     return COMM.bcast(obj, root)
 
 
 def gather(obj, root: int=MASTER):
+    """
+    Pickls the obj on each process and send them to the root process.
+    Returns a list on the master process that contains all objects.
+    """
     return COMM.gather(obj, root=root)
 
 
