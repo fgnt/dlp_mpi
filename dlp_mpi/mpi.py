@@ -23,7 +23,8 @@ __all__ = [
     'barrier',
     'bcast',
     'gather',
-    'map_unordered',
+    'MPI',
+    'COMM',
 ]
 
 
@@ -112,7 +113,7 @@ def barrier():
 
 def bcast(obj, root: int=MASTER):
     """
-    Pickls the obj and send it from the root to all processes.
+    Pickles the obj and send it from the root to all processes (i.e. broadcast)
     """
     return COMM.bcast(obj, root)
 
@@ -131,94 +132,3 @@ def call_on_master_and_broadcast(func, *args, **kwargs):
     else:
         result = None
     return bcast(result)
-
-
-def map_unordered(
-        func,
-        iterable,
-        progress_bar=False,
-        indexable=True,
-
-):
-    """
-    A master process push tasks to the workers and receives the result.
-    Pushing tasks mean, send an index to the worker and the worker iterates
-    through the iterable until the worker reaches this index.
-
-    Required at least 2 mpi processes, but to produce a speedup 3 are required.
-    Only rank 0 get the results.
-    This map is lazy.
-
-    Assume function body is fast.
-
-    Parallel: The execution of func.
-
-    """
-    from tqdm import tqdm
-    from enum import IntEnum, auto
-
-    if SIZE == 1:
-        if progress_bar:
-            yield from tqdm(map(func, iterable))
-            return
-        else:
-            yield from map(func, iterable)
-            return
-
-    status = MPI.Status()
-    workers = SIZE - 1
-
-    class tags(IntEnum):
-        """Avoids magic constants."""
-        start = auto()
-        stop = auto()
-        default = auto()
-
-    COMM.Barrier()
-
-    if RANK == 0:
-        i = 0
-        with tqdm(total=len(iterable), disable=not progress_bar) as pbar:
-            pbar.set_description(f'busy: {workers}')
-            while workers > 0:
-                result = COMM.recv(
-                    source=MPI.ANY_SOURCE,
-                    tag=MPI.ANY_TAG,
-                    status=status)
-                if status.tag == tags.default:
-                    COMM.send(i, dest=status.source)
-                    yield result
-                    i += 1
-                    pbar.update()
-                elif status.tag == tags.start:
-                    COMM.send(i, dest=status.source)
-                    i += 1
-                    pbar.update()
-                elif status.tag == tags.stop:
-                    workers -= 1
-                    pbar.set_description(f'busy: {workers}')
-                else:
-                    raise ValueError(status.tag)
-
-        assert workers == 0
-    else:
-        try:
-            COMM.send(None, dest=0, tag=tags.start)
-            next_index = COMM.recv(source=0)
-            if indexable:
-                while True:
-                    try:
-                        val = iterable[next_index]
-                    except IndexError:
-                        break
-                    result = func(val)
-                    COMM.send(result, dest=0, tag=tags.default)
-                    next_index = COMM.recv(source=0)
-            else:
-                for i, val in enumerate(iterable):
-                    if i == next_index:
-                        result = func(val)
-                        COMM.send(result, dest=0, tag=tags.default)
-                        next_index = COMM.recv(source=0)
-        finally:
-            COMM.send(None, dest=0, tag=tags.stop)
