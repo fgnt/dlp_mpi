@@ -108,14 +108,14 @@ import dlp_mpi
 examples = list(range(10))
 results = []
 
-def workload(example):
+def work_load(example):
     # Some heavy workload:
     # CPU or IO
     time.sleep(0.2)
     result = example
 
 for result in dlp_mpi.map_unordered(
-        workload, examples):
+        work_load, examples):
 
 
 
@@ -153,20 +153,6 @@ An more advanced load balaning is `dlp_mpi.split_managed`, where one process man
 When in the end of a program all results should be summariesd or written in a single file, comunication between all processes is nessesary.
 For this purpose `dlp_mpi.gather` (`mpi4py.MPI.COMM_WORLD.gather`) can be used. This function sends all data to the root process (For serialisation is `pickle` used).
 
-As alternative to splitting the data, this package also provides a `map` style parallelization:
-```python
-import dlp_mpi
-examples = list(range(10))
-def work_load(example):
-    # do some work in parallel
-    result = example
-    return result
-
-results = []
-for result in dlp_mpi.map_unordered(work_load, examples):
-    # do some serial work on the master process
-    results.append(result)
-
-```
-The function `dlp_mpi.map_unordered` calls `work_load` in parallel and executes the for body in serial.
-The communication betweet the processes is only the `result` and the index to get the `i`th result from the examples. i.e.: The example aren't transferred between the processes.
+As alternative to splitting the data, this package also provides a `map` style parallelization (see example in the beginning):
+The function `dlp_mpi.map_unordered` calls `work_load` in parallel and executes the `for` body in serial.
+The communication between the processes is only the `result` and the index to get the `i`th example from the examples. i.e.: The example aren't transferred between the processes.
