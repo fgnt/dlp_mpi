@@ -4,6 +4,7 @@ import dlp_mpi
 from dlp_mpi import MPI, COMM
 from dlp_mpi import RANK, SIZE
 
+
 __all__ = [
     'split_managed'
 ]
@@ -33,7 +34,7 @@ class _tags(IntEnum):
 
 def split_managed(
         sequence,
-        disable_pbar=False,
+        progress_bar=True,
         allow_single_worker=False,
         pbar_prefix=None,
         root=dlp_mpi.MASTER,
@@ -71,12 +72,11 @@ def split_managed(
           Change it that the execution get canceled.
 
     """
-    from tqdm import tqdm
-
     if allow_single_worker and SIZE == 1:
-        if disable_pbar:
+        if not progress_bar:
             yield from sequence
         else:
+            from tqdm import tqdm
             yield from tqdm(sequence, mininterval=2)
         return
 
@@ -90,27 +90,21 @@ def split_managed(
     # ToDo: Ignore workers that failed before this function is called.
     # registered_workers = set()
 
-    dlp_mpi.barrier()
+    # dlp_mpi.barrier()
 
     failed_indices = []
 
     if RANK == root:
         i = 0
-        try:
-            length = len(sequence)
-        except TypeError:
-            length = None
 
         if pbar_prefix is None:
             pbar_prefix = ''
         else:
             pbar_prefix = f'{pbar_prefix}, '
 
-        with tqdm(
-                total=length,
-                disable=disable_pbar,
-                mininterval=2,
-                smoothing=None,
+        with dlp_mpi.util.progress_bar(
+                sequence=sequence,
+                display_progress_bar=progress_bar,
         ) as pbar:
             pbar.set_description(f'{pbar_prefix}busy: {workers}')
             while workers > 0:
@@ -129,13 +123,19 @@ def split_managed(
 
                 if status.tag in [_tags.stop, _tags.failed]:
                     workers -= 1
-                    if not disable_pbar:
+                    if progress_bar:
                         pbar.set_description(f'{pbar_prefix}busy: {workers}')
 
                 if status.tag == _tags.failed:
                     failed_indices += [(status.source, last_index)]
 
         assert workers == 0, workers
+
+        try:
+            length = len(sequence)
+        except TypeError:
+            length = None
+
         # i is bigger than len(iterator), because the slave says value is to big
         # and than the master increases the value
         if length is not None:
