@@ -34,12 +34,13 @@ class _tags(IntEnum):
 
 def split_managed(
         sequence,
-        progress_bar=True,
+        *,
+        is_indexable=False,
         allow_single_worker=False,
+        progress_bar=True,
         pbar_prefix=None,
         root=dlp_mpi.MASTER,
         # gather_mode=False,
-        is_indexable=False,
 ):
     """
     A master process pushes tasks to the workers.
