@@ -9,6 +9,7 @@ __all__ = [
 def map_unordered(
         func,
         sequence,
+        *,
         progress_bar=False,
         indexable=True,
 
@@ -55,41 +56,61 @@ def map_unordered(
         start = auto()
         stop = auto()
         default = auto()
+        failed = auto()
 
-    dlp_mpi.barrier()
+    # dlp_mpi.barrier()
 
     if dlp_mpi.RANK == 0:
         i = 0
 
-        try:
-            total = len(sequence)
-        except TypeError:
-            total = None
+        failed_indices = []
 
-        with tqdm(total=total, disable=not progress_bar) as pbar:
+        with dlp_mpi.util.progress_bar(
+                sequence=sequence,
+                display_progress_bar=progress_bar,
+        ) as pbar:
             pbar.set_description(f'busy: {workers}')
             while workers > 0:
                 result = COMM.recv(
                     source=MPI.ANY_SOURCE,
                     tag=MPI.ANY_TAG,
                     status=status)
-                if status.tag == tags.default:
+                if status.tag in [tags.default, tags.start]:
                     COMM.send(i, dest=status.source)
+                    i += 1
+                if status.tag in [tags.default]:
                     yield result
-                    i += 1
+                if status.tag in [tags.default, tags.failed]:
                     pbar.update()
-                elif status.tag == tags.start:
-                    COMM.send(i, dest=status.source)
-                    i += 1
-                    pbar.update()
-                elif status.tag == tags.stop:
-                    workers -= 1
-                    pbar.set_description(f'busy: {workers}')
-                else:
-                    raise ValueError(status.tag)
 
-        assert workers == 0
+                if status.tag in [tags.stop, tags.failed]:
+                    workers -= 1
+                    if progress_bar:
+                        pbar.set_description(f'busy: {workers}')
+                if status.tag in [tags.failed]:
+                    last_index = result
+                    failed_indices += [(status.source, last_index)]
+
+        try:
+            total = len(sequence)
+        except TypeError:
+            total = None
+
+        # Move this to a separate function and check that all cases are correct
+        if total is not None or len(failed_indices) > 0:
+            if len(failed_indices) > 0 or (not total < i):
+                failed_indices = '\n'.join([
+                    f'worker {rank_} failed for index {index}'
+                    for rank_, index in failed_indices
+                ])
+                raise AssertionError(
+                    f'{total}, {i}: Iterator is not consumed.\n'
+                    f'{failed_indices}'
+                )
+
+        assert workers == 0, workers
     else:
+        next_index = -1
         try:
             COMM.send(None, dest=0, tag=tags.start)
             next_index = COMM.recv(source=0)
@@ -108,5 +129,8 @@ def map_unordered(
                         result = func(val)
                         COMM.send(result, dest=0, tag=tags.default)
                         next_index = COMM.recv(source=0)
-        finally:
+        except BaseException:
+            COMM.send(next_index, dest=0, tag=tags.failed)
+            raise
+        else:
             COMM.send(None, dest=0, tag=tags.stop)
