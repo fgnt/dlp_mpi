@@ -33,9 +33,11 @@ results = []
 
 
 
+
 for example in examples:
 
-    # Some heavy workload: CPU or IO
+    # Some heavy workload:
+    # CPU or IO
     time.sleep(0.2)
     result = example
 
@@ -71,9 +73,11 @@ results = []
 
 
 
+
 for example in dlp_mpi.split_managed(
         examples):
-    # Some heavy workload: CPU or IO
+    # Some heavy workload:
+    # CPU or IO
     time.sleep(0.2)
     result = example
 
@@ -105,12 +109,14 @@ examples = list(range(10))
 results = []
 
 def workload(example):
-    # Some heavy workload: CPU or IO
+    # Some heavy workload:
+    # CPU or IO
     time.sleep(0.2)
     result = example
 
 for result in dlp_mpi.map_unordered(
         workload, examples):
+
 
 
 
