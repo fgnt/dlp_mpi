@@ -1,12 +1,19 @@
 # dlp_mpi - Data-level parallelism with mpi for python
 
+Task parallelism fits better as name
+
+tmpi?
+
 <table>
 <tr>
 <th>
-Run an algorithm on multiple examples
+Run an serial algorithm on multiple examples
 </th>
 <th>
 Use dlp_mpi to run the loop body in parallel
+</th>
+<th>
+Use dlp_mpi to run a function in parallel
 </th>
 </tr>
 <tr>
@@ -19,17 +26,21 @@ import time
 
 
 examples = list(range(10))
+results = []
 
-for i in examples:
-    # load, process and write data
-    # for index i
+
+
+
+
+
+for example in examples:
+
+    # Some heavy workload: CPU or IO
     time.sleep(0.2)
-    data = {'a': i}
-    data['a'] += 2
-    print(data)
+    result = example
 
     # Remember the results
-    results.append(data['a'])
+    results.append(result)
 
 
 
@@ -53,17 +64,21 @@ import time
 import dlp_mpi
 
 examples = list(range(10))
+results = []
 
-for i in dlp_mpi.split_managed(examples):
-    # load, process and write data
-    # for index i
+
+
+
+
+
+for example in dlp_mpi.split_managed(
+        examples):
+    # Some heavy workload: CPU or IO
     time.sleep(0.2)
-    data = {'a': i}
-    data['a'] += 2
-    print(data)
+    result = example
 
     # Remember the results
-    results.append(data['a'])
+    results.append(result)
 
 results = dlp_mpi.gather(results)
 
@@ -75,7 +90,45 @@ if dlp_mpi.IS_MASTER:
     ]
     
     # Summarize your experiment
-    print(sum(results))
+    print(results)
+```
+</td>
+<td>
+
+```python
+# mpiexec -np 8 python script.py
+
+import time
+import dlp_mpi
+
+examples = list(range(10))
+results = []
+
+def workload(example):
+    # Some heavy workload: CPU or IO
+    time.sleep(0.2)
+    result = example
+
+for result in dlp_mpi.map_unordered(
+        workload, examples):
+
+
+
+
+    # Remember the results
+    results.append(result)
+
+
+
+
+
+
+
+
+
+if dlp_mpi.IS_MASTER:
+    # Summarize your experiment
+    print(results)
 ```
 </td>
 </tr>
