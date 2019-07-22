@@ -42,7 +42,10 @@ try:
             # concepts to use multicores.
         else:
             ensure_single_thread_numeric()
+    _mpi_available = True
 except ImportError:
+    _mpi_available = False
+
     if 'PC2SYSNAME' in os.environ:
         # No fallback to single core, when the code is executed on our HPC
         # system (PC2).
