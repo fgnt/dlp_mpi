@@ -1,0 +1,292 @@
+
+\documentclass[tikz,border=5]{standalone}
+\RequirePackage{luatex85}
+
+\input{/net/vol/boeddeker/deploy/cbj/cbj/viz/tikz_header.tex}
+
+% \usepackage[decimalsymbol=comma, expproduct=times]{siunitx}
+\usepackage[expproduct=times]{siunitx}
+
+\usepackage{listings}
+
+
+\begin{document}
+	\input{/net/vol/boeddeker/deploy/cbj/cbj/viz/tikz_styles.tex}
+	
+	\tikzstyle{block}=[draw,text centered, text width=3em, minimum height=4ex] % rectangle
+	\tikzstyle{setup}=[block,fill=black!50!blue,text=white] % rectangle
+	\tikzstyle{task}=[block,fill=black!50!orange,text=white] % rectangle
+	
+	\tikzstyle{gather}=[block,fill=black!50!yellow,text=white] % rectangle
+	
+	\tikzstyle{taskfinalize}=[block,text width=0.0em,fill=black!50!yellow,text=white] % rectangle
+	\tikzstyle{finalize}=[block,text width=2em,fill=black!50!green,text=white] % rectangle
+	
+	\tikzstyle{task1}=[task, text width=3.5em] %
+	\tikzstyle{task2}=[task, text width=1.5em] %
+	\tikzstyle{task3}=[task, text width=2em] %
+	\tikzstyle{task4}=[task, text width=3em] %
+	\tikzstyle{task5}=[task, text width=3.5em] %
+	\tikzstyle{task6}=[task, text width=1.2em] %
+	\tikzstyle{task7}=[task, text width=1.1em] %
+	\tikzstyle{task8}=[task, text width=0.5em] %
+	\tikzstyle{task9}=[task, text width=2em] %
+	
+	
+	% --as-tex=True
+	
+	\tikzstyle{code}=[align=left, anchor=north west, inner sep = 0] %
+
+
+\begin{tikzpicture}[x=2em, y=4ex, scale=1]
+
+\coordinate (null) at (0, 0);
+
+\node[blue!50!black, align=left, inner sep = 0] (setup) at (0, 15){
+\begin{lstlisting}
+examples = ...
+\end{lstlisting}
+};
+\node[code] (loop) at (setup.south west){
+\begin{lstlisting}
+for example in examples:
+\end{lstlisting}
+};
+\node[code, orange!50!black] (task) at (loop.south west){
+\begin{lstlisting}
+	result = ..
+	results.append(result)
+\end{lstlisting}
+};
+\node[code, green!50!black] (finalize) at (task.south west){
+\begin{lstlisting}
+dump(results)
+\end{lstlisting}
+};
+
+\node[setup] (serialSetup) at ($(finalize.south -| null) + (2, -1)$){setup};
+\node[left] at (serialSetup.west){Serial Worker};
+
+\node[task1,right] (task1) at (serialSetup.east){1};
+\node[task2,right] (task2) at (task1.east){2};
+\node[task3,right] (task3) at (task2.east){3};
+\node[task4,right] (task4) at (task3.east){4};
+\node[task5,right] (task5) at (task4.east){5};
+\node[task6,right] (task6) at (task5.east){6};
+\node[task7,right] (task7) at (task6.east){7};
+\node[task8,right] (task8) at (task7.east){8};
+\node[task9,right] (task9) at (task8.east){9};
+\node[finalize,right] (finalize) at (task9.east){};
+
+
+
+\end{tikzpicture}
+\begin{tikzpicture}[x=2em, y=4ex, scale=1]
+
+\coordinate (null) at (0, 0);
+\coordinate (finalize) at (0, 0);
+
+
+\node[blue!50!black, align=left, inner sep = 0] (setup) at ($(finalize -| null) + (0, -2)$){
+\begin{lstlisting}
+examples = ...
+\end{lstlisting}
+};
+\node[code] (loop) at (setup.south west){
+\begin{lstlisting}
+for example in dlp_mpi.split_round_robin(examples):
+# for example in examples[dlp_mpi.RANK::dlp_mpi.SIZE]:
+# for index in range(dlp_mpi.RANK, len(examples), dlp_mpi.SIZE):
+#       example = examples[index]
+\end{lstlisting}
+};
+\node[code, orange!50!black] (task) at (loop.south west){
+\begin{lstlisting}
+	result = ..
+	results.append(result)
+\end{lstlisting}
+};
+\node[code, yellow!50!black] (gather) at (task.south west){
+\begin{lstlisting}
+results = dlp_mpi.gather(results)
+\end{lstlisting}
+};
+\node[code, green!50!black] (finalize) at (gather.south west){
+	\begin{lstlisting}
+if dlp_mpi.IS_MASTER:
+	results = [
+		result
+		for worker_results in results
+		for result in worker_results
+	]
+	dump(results)
+	\end{lstlisting}
+};
+
+
+\node[setup] (rrWorker1Setup) at ($(finalize.south -| null) + (4, -1)$){setup};
+\node[setup] (rrWorker2Setup) at ($(rrWorker1Setup) - (0, 1)$){setup};
+\node[setup] (rrWorker3Setup) at ($(rrWorker1Setup) - (0, 2)$){setup};
+\node[setup] (rrWorker4Setup) at ($(rrWorker1Setup) - (0, 3)$){setup};
+
+\node[left] at (rrWorker1Setup.west){Round Robin Worker 1};
+\node[left] at (rrWorker2Setup.west){Round Robin Worker 2};
+\node[left] at (rrWorker3Setup.west){Round Robin Worker 3};
+\node[left] at (rrWorker4Setup.west){Round Robin Worker 4};
+
+\node[task1,right] (task1) at (rrWorker1Setup.east){1};
+\node[task2,right] (task2) at (rrWorker2Setup.east){2};
+\node[task3,right] (task3) at (rrWorker3Setup.east){3};
+\node[task4,right] (task4) at (rrWorker4Setup.east){4};
+\node[task5,right] (task5) at (task1.east){5};
+\node[task6,right] (task6) at (task2.east){6};
+\node[task7,right] (task7) at (task3.east){7};
+\node[task8,right] (task8) at (task4.east){8};
+\node[task9,right] (task9) at (task5.east){9};
+
+\node[gather, text width=0.2em,right,minimum height=16ex] (gather) at ($(task9.east) + (0, -1.5)$){}; %\rotatebox{90}{gather}
+\node[finalize,right] (finalize) at ($(gather.east) + (0, 1.5)$){};
+
+
+\end{tikzpicture}
+
+
+\begin{tikzpicture}[x=2em, y=4ex, scale=1]
+
+\coordinate (null) at (0, 0);
+\coordinate (gather) at (0, 0);
+
+
+\node[blue!50!black, align=left, inner sep = 0] (setup) at ($(gather -| null) + (0, -2)$){
+\begin{lstlisting}
+examples = ...
+\end{lstlisting}
+};
+\node[code] (loop) at (setup.south west){
+\begin{lstlisting}
+for example in dlp_mpi.split_managed(examples):
+# for index in dlp_mpi.split_managed(list(range(len(examples)))):
+#       example = examples[index]
+\end{lstlisting}
+};
+\node[code, orange!50!black] (task) at (loop.south west){
+\begin{lstlisting}
+	result = ..
+results.append(result)
+	\end{lstlisting}
+};
+\node[code, yellow!50!black] (gather) at (task.south west){
+\begin{lstlisting}
+results = dlp_mpi.gather(results)
+\end{lstlisting}
+};
+\node[code, green!50!black] (finalize) at (gather.south west){
+\begin{lstlisting}
+if dlp_mpi.IS_MASTER:
+	results = [
+		result
+		for worker_results in results
+		for result in worker_results
+	]
+	dump(results)
+\end{lstlisting}
+};
+
+
+\node[setup] (managerSetup) at ($(finalize.south -| null) + (1, -1)$){setup};
+\node[setup] (worker1Setup) at ($(managerSetup) - (0, 1)$){setup};
+\node[setup] (worker2Setup) at ($(managerSetup) - (0, 2)$){setup};
+\node[setup] (worker3Setup) at ($(managerSetup) - (0, 3)$){setup};
+
+\node[left] at (managerSetup.west){Manager};
+\node[left] at (worker1Setup.west){Worker 1};
+\node[left] at (worker2Setup.west){Worker 2};
+\node[left] at (worker3Setup.west){Worker 3};
+
+\node[task1,right] (task1) at (worker1Setup.east){1};
+\node[task2,right] (task2) at (worker2Setup.east){2};
+\node[task3,right] (task3) at (worker3Setup.east){3};
+\node[task4,right] (task4) at (task2.east){4};
+\node[task5,right] (task5) at (task3.east){5};
+\node[task6,right] (task6) at (task1.east){6};
+\node[task7,right] (task7) at (task4.east){7};
+\node[task8,right] (task8) at (task6.east){8};
+\node[task9,right] (task9) at (task5.east){9};
+
+\node[gather, text width=0.2em,right,minimum height=16ex] (gather) at ($(task9.east) + (0, 1.5)$){}; %\rotatebox{90}{gather}
+\node[finalize,right] (finalize) at ($(gather.east) + (0, 1.5)$){};
+
+\end{tikzpicture}
+
+\begin{tikzpicture}[x=2em, y=4ex, scale=1]
+
+\coordinate (null) at (0, 0);
+\coordinate (gather) at (0, 0);
+
+
+\node[blue!50!black, align=left, inner sep = 0] (setup) at ($(gather -| null) + (0, -2)$){
+\begin{lstlisting}
+examples = ...
+\end{lstlisting}
+};
+\node[code, orange!50!black] (task) at (setup.south west){
+\begin{lstlisting}
+def task(example):
+	result = ...
+	return result
+\end{lstlisting}
+};
+\node[code] (loop) at (task.south west){
+\begin{lstlisting}
+for worker_result in dlp_mpi.map_unordered(task, examples):
+\end{lstlisting}
+};
+\node[code, yellow!50!black] (body) at (loop.south west){
+\begin{lstlisting}
+	result = ..
+	results.append(result)
+\end{lstlisting}
+};
+\node[code, green!50!black] (finalize) at (body.south west){
+	\begin{lstlisting}
+if dlp_mpi.IS_MASTER:
+	dump(results)
+	\end{lstlisting}
+};
+
+
+\node[setup] (managerSetup) at ($(finalize.south -| null) + (1, -1)$){setup};
+\node[setup] (worker1Setup) at ($(managerSetup) - (0, 1)$){setup};
+\node[setup] (worker2Setup) at ($(managerSetup) - (0, 2)$){setup};
+\node[setup] (worker3Setup) at ($(managerSetup) - (0, 3)$){setup};
+
+\node[left] at (managerSetup.west){Manager};
+\node[left] at (worker1Setup.west){Worker 1};
+\node[left] at (worker2Setup.west){Worker 2};
+\node[left] at (worker3Setup.west){Worker 3};
+
+\node[task1,right] (task1) at (worker1Setup.east){1};
+\node[task2,right] (task2) at (worker2Setup.east){2};
+\node[task3,right] (task3) at (worker3Setup.east){3};
+\node[taskfinalize,right] (task2Finalize) at (task2.east|-managerSetup){};
+\node[task4,right] (task4) at (task2.east){4};
+\node[taskfinalize,right] (task3Finalize) at (task2Finalize.east|-managerSetup){};
+\node[task5,right] (task5) at (task3.east -| task2Finalize.east){5};
+\node[taskfinalize,right] (task1Finalize) at (task1.east|-managerSetup){};
+\node[task6,right] (task6) at (task1.east){6};
+\node[taskfinalize,right] (task4Finalize) at (task4.east|-managerSetup){};
+\node[task7,right] (task7) at (task4.east){7};
+\node[taskfinalize,right] (task6Finalize) at (task4Finalize.east|-managerSetup){};
+\node[task8,right] (task8) at (task6.east -| task4Finalize.east){8};
+\node[taskfinalize,right] (task5Finalize) at (task6Finalize.east|-managerSetup){};
+\node[task9,right] (task9) at (task5.east -| task6Finalize.east){9};
+
+\node[taskfinalize,right] (task8Finalize) at (task5Finalize.east|-managerSetup){};
+\node[taskfinalize,right] (task9Finalize) at (task9.east|-managerSetup){};
+
+%\node[gather, text width=0.2em,right,minimum height=16ex] (gather) at ($(task9.east) + (0, 1.5)$){}; %\rotatebox{90}{gather}
+\node[finalize,right] (finalize) at ($(task9Finalize.east) + (0, 0)$){};
+
+\end{tikzpicture}
+
+\end{document}

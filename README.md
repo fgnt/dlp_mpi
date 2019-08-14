@@ -156,3 +156,41 @@ For this purpose `dlp_mpi.gather` (`mpi4py.MPI.COMM_WORLD.gather`) can be used. 
 As alternative to splitting the data, this package also provides a `map` style parallelization (see example in the beginning):
 The function `dlp_mpi.map_unordered` calls `work_load` in parallel and executes the `for` body in serial.
 The communication between the processes is only the `result` and the index to get the `i`th example from the examples. i.e.: The example aren't transferred between the processes.
+
+# Runtime
+
+Without this package your code runs serial.
+The execution time of the following code snippets will demonstrated, how it runs with this package.
+Regarding the color: The `examples = ...` is the setup code.
+Therefore it is blue in the code and the block that represents the execution time is also blue.
+
+![(Serial Worker)](doc/tikz_split_managed_serial.svg)
+
+This simples way to paralize the workload (dark orange) is to do an round robin assignment of the load:
+`for example in dlp_mpi.split_round_robin(examples)`.
+This function call is equivalent to `for example in examples[dlp_mpi.RANK::dlp_mpi.SIZE]`.
+So there is zero comunications between the workers.
+Only when it is nessesary to do some final work on the results of all data (e.g. calculating average metrics) a comunication is nessesary.
+This is done with the `gather` function.
+This functions returns the worker results in an list on the master process and the worker process gets a `None` return value.
+Depending on the workload the round robin assingment can be suboptimal.
+See the example block diagramm.
+Worker 1 got tasks that are relative long.
+So this worker used much more time than the others.
+
+![(Round Robin)](doc/tikz_split_managed_rr.svg)
+
+To overcome the limitations of the round robin assingment, this package propose to use a manager to assign the work to the workers.
+This optimizes the utilisation of the workers.
+Once a worker finished an example, he request a new one from the manager and gets one assigned.
+Note: The comunication is only which example should be processed (i.e. the index of the example) not the example itself.
+
+![(Managed Split)](doc/tikz_split_managed_split.svg)
+
+An alternative to splitting the iterator is to use a `map` function.
+The function is the executed on the workers and the return value is send back to the manager.
+Be carefull, that the loop body is fast enough, otherwise it can be a bottleneck.
+When a worker sends a task to the manager, the manager sends back a new task and enter the for loop body. 
+While the manager is in the loop body, he cannot react on requests of other workers, see the block diagramm:
+
+![(Managed Map)](doc/tikz_split_managed_map.svg)
