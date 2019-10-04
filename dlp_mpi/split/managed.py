@@ -35,7 +35,7 @@ class _tags(IntEnum):
 def split_managed(
         sequence,
         *,
-        is_indexable=False,
+        is_indexable=True,
         allow_single_worker=False,
         progress_bar=True,
         pbar_prefix=None,
@@ -81,7 +81,15 @@ def split_managed(
             yield from tqdm(sequence, mininterval=2)
         return
 
-    assert SIZE > 1, SIZE
+    if SIZE <= 1:
+        raise ValueError(
+            'When you want to allow a single worker for split_managed,\n'
+            'set allow_single_worker to True. i.e.:\n'
+            'for ... in split_managed(..., allow_single_worker=True): ...\n'
+            'Got: SIZE={SIZE}'
+        )
+
+    assert SIZE > 1, (SIZE)
     assert root < SIZE, (root, SIZE)
     assert root == 0, root
 
