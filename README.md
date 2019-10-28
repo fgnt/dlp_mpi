@@ -1,9 +1,5 @@
 # dlp_mpi - Data-level parallelism with mpi for python
 
-Task parallelism fits better as name
-
-tmpi?
-
 <table>
 <tr>
 <th>
