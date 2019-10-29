@@ -1,3 +1,4 @@
+import os
 import logging
 import contextlib
 
@@ -10,8 +11,6 @@ def progress_bar(
         sequence,
         display_progress_bar,
 ):
-
-
     try:
         length = len(sequence)
     except TypeError:
@@ -41,3 +40,34 @@ def progress_bar(
             pass
 
     yield DummyPBar()
+
+
+def ensure_single_thread_numeric():
+    """
+    When you parallelize your input pipeline you often want each worker to work
+    on a single thread.
+
+    These are all candidates to set to 1, but the ones checked in this
+    function are mandatory as far as we know.
+
+    GOMP_NUM_THREADS
+    OMP_NUM_THREADS
+    OPENBLAS_NUM_THREADS
+    MKL_NUM_THREADS
+    VECLIB_MAXIMUM_THREADS
+    NUMEXPR_NUM_THREADS
+
+    Returns:
+
+    """
+    candidates = 'OMP_NUM_THREADS MKL_NUM_THREADS'.split()
+
+    for key in candidates:
+        if not os.environ.get(key) == '1':
+            raise EnvironmentError(
+                'Make sure to set the following environment variables to '
+                'ensure that each worker works on a single thread:\n'
+                'export OMP_NUM_THREADS=1\n'
+                'export MKL_NUM_THREADS=1\n\n'
+                f'But you use: {key}={os.environ.get(key)}'
+            )

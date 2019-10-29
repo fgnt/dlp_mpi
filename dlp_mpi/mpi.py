@@ -12,7 +12,7 @@ If you want to implement Round-Robin execution, you can try this::
         pass
 """
 import os
-from paderbox.utils.parallel_utils import ensure_single_thread_numeric
+from dlp_mpi.util import ensure_single_thread_numeric
 
 
 __all__ = [
