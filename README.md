@@ -190,3 +190,30 @@ When a worker sends a task to the manager, the manager sends back a new task and
 While the manager is in the loop body, he cannot react on requests of other workers, see the block diagramm:
 
 ![(Managed Map)](doc/tikz_split_managed_map.svg)
+
+
+# Installation
+
+You can install this package from pypi:
+```bash
+pip install dlp_mpi
+```
+
+To check if the installation was succesfully, try the following command:
+```bash 
+$ mpiexec -np 4 python -c 'import dlp_mpi; print(dlp_mpi.RANK)'
+3
+0
+1
+2
+```
+The command should print the numbers 0, 1, 2 and 3.
+The order is random.
+When that line prints 4 times a zero, something went wrong.
+
+This can happen, when you have no `mpi` installed or the installation is brocken.
+In a debian based linux you can install it with `sudo apt install libopenmpi-dev`.
+When you do not have the rights to install something with `apt`, you could also install `mpi4py` with `conda`.
+The above `pip install` will install `mpi4py` from `pypi`.
+Be carefull, that the installation from `conda` may conflict with you locally installed `mpi`. 
+Especially in High Performance Computing (HPC) enviroments this can cause troubles.
