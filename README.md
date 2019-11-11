@@ -136,39 +136,39 @@ if dlp_mpi.IS_MASTER:
 </tr>
 </table>
 
-This package uses `mpi4py` to provide utilities to parallize algorithms that are applied to multiple examples.
+This package uses `mpi4py` to provide utilities to parallelize algorithms that are applied to multiple examples.
 
 The core idea is: Start `N` processes and each process works on a subset of all examples.
 To start the processes `mpiexec` can be used. Most HPC systems support MPI to scatter the workload across multiple hosts. For the command, look in the documentation for your HPC system and search for MPI launches.
 
 Since each process should operate on different examples, MPI provides the variables `RANK` and `SIZE`, where `SIZE` is the number of workers and `RANK` is a unique identifier from `0` to `SIZE - 1`.
-The simplest way to improve the execution time is to process `examples[RANK::SIZE]` on each worker.
+The easiest way to improve the execution time is to process `examples[RANK::SIZE]` on each worker.
 This is a round robin load balancing (`dlp_mpi.split_round_robin`).
-An more advanced load balaning is `dlp_mpi.split_managed`, where one process manages the load and assigns a new task to a worker, once he finishes the last task.
+A more advanced load balancing is `dlp_mpi.split_managed`, where one process manages the load and assigns a new task to a worker once he finishes the last task.
 
-When in the end of a program all results should be summariesd or written in a single file, comunication between all processes is nessesary.
-For this purpose `dlp_mpi.gather` (`mpi4py.MPI.COMM_WORLD.gather`) can be used. This function sends all data to the root process (For serialisation is `pickle` used).
+When in the end of a program all results should be summarized or written in a single file, communication between all processes is nessesary.
+For this purpose `dlp_mpi.gather` (`mpi4py.MPI.COMM_WORLD.gather`) can be used. This function sends all data to the root process (Here, `pickle` is used for serialization).
 
-As alternative to splitting the data, this package also provides a `map` style parallelization (see example in the beginning):
+As an alternative to splitting the data, this package also provides a `map` style parallelization (see example in the beginning):
 The function `dlp_mpi.map_unordered` calls `work_load` in parallel and executes the `for` body in serial.
-The communication between the processes is only the `result` and the index to get the `i`th example from the examples. i.e.: The example aren't transferred between the processes.
+The communication between the processes is only the `result` and the index to get the `i`th example from the examples, i.e., the example aren't transferred between the processes.
 
 # Runtime
 
-Without this package your code runs serial.
-The execution time of the following code snippets will demonstrated, how it runs with this package.
+Without this package your code runs in serial.
+The execution time of the following code snippets will be demonstrated by running it with this package.
 Regarding the color: The `examples = ...` is the setup code.
-Therefore it is blue in the code and the block that represents the execution time is also blue.
+Therefore, the code and the correspoding block representing the execution time it is blue in the code.
 
 ![(Serial Worker)](doc/tikz_split_managed_serial.svg)
 
-This simples way to paralize the workload (dark orange) is to do an round robin assignment of the load:
+This easiest way to parallelize the workload (dark orange) is to do a round robin assignment of the load:
 `for example in dlp_mpi.split_round_robin(examples)`.
 This function call is equivalent to `for example in examples[dlp_mpi.RANK::dlp_mpi.SIZE]`.
-So there is zero comunications between the workers.
-Only when it is nessesary to do some final work on the results of all data (e.g. calculating average metrics) a comunication is nessesary.
+Thus, there is zero comunications between the workers.
+Only when it is nessesary to do some final work on the results of all data (e.g. calculating average metrics) a communication is nessesary.
 This is done with the `gather` function.
-This functions returns the worker results in an list on the master process and the worker process gets a `None` return value.
+This functions returns the worker results in a list on the master process and the worker process gets a `None` return value.
 Depending on the workload the round robin assingment can be suboptimal.
 See the example block diagramm.
 Worker 1 got tasks that are relative long.
@@ -176,17 +176,18 @@ So this worker used much more time than the others.
 
 ![(Round Robin)](doc/tikz_split_managed_rr.svg)
 
-To overcome the limitations of the round robin assingment, this package propose to use a manager to assign the work to the workers.
+To overcome the limitations of the round robin assignment, this package helps to use a manager to assign the work to the workers.
 This optimizes the utilisation of the workers.
-Once a worker finished an example, he request a new one from the manager and gets one assigned.
-Note: The comunication is only which example should be processed (i.e. the index of the example) not the example itself.
+Once a worker finished an example, it requests a new one from the manager and gets one assigned.
+Note: The communication is only which example should be processed (i.e. the index of the example) not the example itself.
 
 ![(Managed Split)](doc/tikz_split_managed_split.svg)
 
 An alternative to splitting the iterator is to use a `map` function.
-The function is the executed on the workers and the return value is send back to the manager.
+The function is then executed on a worker and the return value is sent back to the manager.
 Be carefull, that the loop body is fast enough, otherwise it can be a bottleneck.
-When a worker sends a task to the manager, the manager sends back a new task and enter the for loop body. 
+You should use the loop body only for book keeping, not for actual work load.
+When a worker sends a task to the manager, the manager sends back a new task and enters the for loop body. 
 While the manager is in the loop body, he cannot react on requests of other workers, see the block diagramm:
 
 ![(Managed Map)](doc/tikz_split_managed_map.svg)
@@ -199,7 +200,7 @@ You can install this package from pypi:
 pip install dlp_mpi
 ```
 
-To check if the installation was succesfully, try the following command:
+To check if the installation was successful, try the following command:
 ```bash 
 $ mpiexec -np 4 python -c 'import dlp_mpi; print(dlp_mpi.RANK)'
 3
@@ -212,8 +213,8 @@ The order is random.
 When that line prints 4 times a zero, something went wrong.
 
 This can happen, when you have no `mpi` installed or the installation is brocken.
-In a debian based linux you can install it with `sudo apt install libopenmpi-dev`.
+In a Debian-based Linux you can install it with `sudo apt install libopenmpi-dev`.
 When you do not have the rights to install something with `apt`, you could also install `mpi4py` with `conda`.
 The above `pip install` will install `mpi4py` from `pypi`.
-Be carefull, that the installation from `conda` may conflict with you locally installed `mpi`. 
-Especially in High Performance Computing (HPC) enviroments this can cause troubles.
+Be careful, that the installation from `conda` may conflict with your locally installed `mpi`. 
+Especially in High Performance Computing (HPC) environments this can cause troubles.
