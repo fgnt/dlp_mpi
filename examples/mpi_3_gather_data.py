@@ -7,7 +7,7 @@ python mpi.py
 mpiexec -np 3 python mpi.py
 """
 
-from paderbox.utils.mpi import *
+from dlp_mpi import *
 
 if __name__ == '__main__':
     if RANK == 0:

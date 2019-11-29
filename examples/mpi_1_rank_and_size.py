@@ -7,7 +7,7 @@ python mpi_1_rank_and_size.py
 mpiexec -np 3 python mpi_1_rank_and_size.py
 """
 
-from paderbox.utils.mpi import COMM, RANK, SIZE
+from dlp_mpi import COMM, RANK, SIZE
 
 if __name__ == '__main__':
     print(f'rank={RANK}, size={SIZE}')

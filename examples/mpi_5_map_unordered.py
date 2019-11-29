@@ -6,7 +6,7 @@ Run on multiple CPUs:
 mpiexec -np 5 python paderbox/examples/mpi_5_map_unordered.py
 """
 
-from paderbox.utils.mpi import COMM, RANK, SIZE, MASTER, IS_MASTER, map_unordered
+from dlp_mpi import COMM, RANK, SIZE, MASTER, IS_MASTER, map_unordered
 import time
 import numpy as np
 
