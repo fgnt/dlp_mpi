@@ -1,10 +1,10 @@
 """Call instructions:
 
 # When you do not have MPI:
-python mpi.py
+python mpi_3_gather_data.py
 
 # When you have MPI:
-mpiexec -np 3 python mpi.py
+mpiexec -np 3 python mpi_3_gather_data.py
 """
 
 from dlp_mpi import *

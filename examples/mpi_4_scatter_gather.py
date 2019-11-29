@@ -1,10 +1,10 @@
 """Call instructions:
 
 # When you do not have MPI:
-python mpi.py
+python mpi_4_scatter_gather.py
 
 # When you have MPI:
-mpiexec -np 3 python mpi.py
+mpiexec -np 3 python mpi_4_scatter_gather.py
 """
 from itertools import islice
 from dlp_mpi import COMM, RANK, SIZE, MASTER, IS_MASTER

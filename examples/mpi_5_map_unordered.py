@@ -1,9 +1,9 @@
 """
 Run on single CPU:
-python paderbox/examples/mpi_5_map_unordered.py
+python mpi_5_map_unordered.py
 
 Run on multiple CPUs:
-mpiexec -np 5 python paderbox/examples/mpi_5_map_unordered.py
+mpiexec -np 5 python mpi_5_map_unordered.py
 """
 
 from dlp_mpi import COMM, RANK, SIZE, MASTER, IS_MASTER, map_unordered
