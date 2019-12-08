@@ -70,7 +70,7 @@ except ImportError:
             f'You use intel mpi while we usually use openmpi.\n'
             f'This is usually caused from "conda install mpi4py" instead of '
             f'"pip install mpi4py".\n'
-            f'Try to deinstall mpi4py and install it with "pip install mpi4py"'
+            f'Try to uninstall mpi4py and install it with "pip install mpi4py"'
         )
         raise
 
@@ -123,7 +123,7 @@ def bcast(obj, root: int=MASTER):
 
 def gather(obj, root: int=MASTER):
     """
-    Pickls the obj on each process and send them to the root process.
+    Pickles the obj on each process and send them to the root process.
     Returns a list on the master process that contains all objects.
     """
     return COMM.gather(obj, root=root)

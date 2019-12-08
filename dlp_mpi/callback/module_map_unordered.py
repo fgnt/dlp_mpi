@@ -15,23 +15,23 @@ def map_unordered(
 
 ):
     """
-    Similar to the buildin function map, but the function is executed on the
-    workers and the result is send to the master process.
+    Similar to the builtin function map, but the function is executed on the
+    workers and the result is sent to the master process.
 
-    A master process push tasks to the workers and receives the result.
-    Pushing tasks mean, send an index to the worker and the worker processes
-    the corresponding entry in the sequence.
+    A master process pushes tasks to the workers and receives the result.
+    Pushing a task means to send an index to the worker and the worker
+    processing the corresponding entry in the sequence.
 
     By default it is assumed that the sequence is indexable
     (i.e. sequence[3] is allowed). When this is not the case, the argument
     indexable can be set to False and the worker iterates through the
-    sequence to get the correct item. In this case it is recomented, that
+    sequence to get the correct item. In this case it is recommended that
     iterating through the sequence is fast.
 
-    Required at least 2 mpi processes, but to produce a speedup 3 are required.
-    Only rank 0 get the results.
+    Requires at least 2 mpi processes, but to gain a speedup 3 are needed.
+    Only rank 0 gets the results.
     This map is lazy. When the master process blocks in the for loop, the
-    master process can not submit new tasks to the workers.
+    master process cannot submit new tasks to the workers.
 
     Assume function body is fast.
 

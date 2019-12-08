@@ -47,8 +47,8 @@ def ensure_single_thread_numeric():
     When you parallelize your input pipeline you often want each worker to work
     on a single thread.
 
-    These are all candidates to set to 1, but the ones checked in this
-    function are mandatory as far as we know.
+    These variables are all candidates to be set to 1, but the ones checked in
+    this function are mandatory as far as we know.
 
     GOMP_NUM_THREADS
     OMP_NUM_THREADS
@@ -56,11 +56,11 @@ def ensure_single_thread_numeric():
     MKL_NUM_THREADS
     VECLIB_MAXIMUM_THREADS
     NUMEXPR_NUM_THREADS
-
-    Returns:
-
     """
-    candidates = 'OMP_NUM_THREADS MKL_NUM_THREADS'.split()
+    candidates = [
+        'OMP_NUM_THREADS',
+        'MKL_NUM_THREADS',
+    ]
 
     for key in candidates:
         if not os.environ.get(key) == '1':

@@ -9,14 +9,15 @@ __all__ = [
     'split_managed'
 ]
 
+
 class _tags(IntEnum):
 
-    # The first time the worker request a task, this tag is send:
+    # The first time the worker requests a task, this tag is sent:
     #    need new data
     start = auto()
 
-    # The last time the worker request a task, this tag is send:
-    #    finished successfully the work.
+    # The last time the worker requests a task, this tag is sent:
+    #    finished the work successfully.
     stop = auto()
 
     # The default tag
@@ -24,7 +25,8 @@ class _tags(IntEnum):
     default = auto()
 
     # Something went wrong and got an exception. This worker is now broken.
-    # The master process will fail when all processes finished (i.e. stop of failed)
+    # The master process will fail when all processes have finished
+    # (i.e. stop or failed)
     failed = auto()
 
     # Special when the split is used as map.
@@ -44,7 +46,7 @@ def split_managed(
 ):
     """
     A master process pushes tasks to the workers.
-    Required at least 2 mpi processes, but to produce a speedup 3 are required.
+    Requires at least 2 mpi processes, but to gain a speedup 3 are needed.
 
     Parallel: Body of the for loop.
     Communication: Indices
@@ -61,7 +63,7 @@ def split_managed(
               the correct index. Similar to itertools.islice(RANK, None, SIZE)
               but uses an assignment from a master process instead of round
               robin selection.
-        False: Use getitem instead of iterationg over the iterator.
+        False: Use getitem instead of iterating over the iterator.
 
 
     ToDo:
@@ -159,7 +161,7 @@ def split_managed(
                 )
     else:
         next_index = -1
-        successfull = False
+        successful = False
         try:
             COMM.send(None, dest=root, tag=_tags.start)
             next_index = COMM.recv(source=root)
@@ -184,9 +186,9 @@ def split_managed(
                     COMM.send(next_index, dest=root, tag=_tags.default)
                     next_index = COMM.recv(source=root)
 
-            successfull = True
+            successful = True
         finally:
-            if successfull:
+            if successful:
                 COMM.send(next_index, dest=root, tag=_tags.stop)
             else:
                 COMM.send(next_index, dest=root, tag=_tags.failed)
