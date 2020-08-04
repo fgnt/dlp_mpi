@@ -105,6 +105,13 @@ def split_managed(
 
     failed_indices = []
 
+    # Clone acts as barrier and prevents the root process to receive wrong
+    # messages (i.e. when this function finishes on the worker they may can do
+    # again some communications).
+    # I don't want to use a barrier after this function, so the workers can
+    # shutdown once they did their work.
+    comm = COMM.Clone()
+
     if RANK == root:
         i = 0
 
@@ -119,14 +126,14 @@ def split_managed(
         ) as pbar:
             pbar.set_description(f'{pbar_prefix}busy: {workers}')
             while workers > 0:
-                last_index = COMM.recv(
+                last_index = comm.recv(
                     source=MPI.ANY_SOURCE,
                     tag=MPI.ANY_TAG,
                     status=status,
                 )
 
                 if status.tag in [_tags.default, _tags.start]:
-                    COMM.send(i, dest=status.source)
+                    comm.send(i, dest=status.source)
                     i += 1
 
                 if status.tag in [_tags.default, _tags.failed]:
@@ -163,8 +170,8 @@ def split_managed(
         next_index = -1
         successful = False
         try:
-            COMM.send(None, dest=root, tag=_tags.start)
-            next_index = COMM.recv(source=root)
+            comm.send(None, dest=root, tag=_tags.start)
+            next_index = comm.recv(source=root)
 
             if not is_indexable:
                 for i, val in enumerate(sequence):
@@ -172,8 +179,8 @@ def split_managed(
                         assert val is not None, val
                         data = yield val
                         assert data is None, data
-                        COMM.send(next_index, dest=root, tag=_tags.default)
-                        next_index = COMM.recv(source=root)
+                        comm.send(next_index, dest=root, tag=_tags.default)
+                        next_index = comm.recv(source=root)
             else:
                 length = len(sequence)
                 assert length is not None, length
@@ -183,15 +190,15 @@ def split_managed(
                     assert val is not None, val
                     data = yield val
                     assert data is None, data
-                    COMM.send(next_index, dest=root, tag=_tags.default)
-                    next_index = COMM.recv(source=root)
+                    comm.send(next_index, dest=root, tag=_tags.default)
+                    next_index = comm.recv(source=root)
 
             successful = True
         finally:
             if successful:
-                COMM.send(next_index, dest=root, tag=_tags.stop)
+                comm.send(next_index, dest=root, tag=_tags.stop)
             else:
-                COMM.send(next_index, dest=root, tag=_tags.failed)
+                comm.send(next_index, dest=root, tag=_tags.failed)
 
 '''
 def split_managed_(

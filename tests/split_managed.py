@@ -41,8 +41,63 @@ def speedup():
     assert elapsed >= 0.5 * serial_time, (elapsed, serial_time)
 
 
+def cross_communication():
+    print(f'cross_communication test {RANK}')
+
+    examples = list(range(5))
+
+    ranks = dlp_mpi.gather(dlp_mpi.RANK)
+    if dlp_mpi.IS_MASTER:
+        assert ranks == [0, 1, 2], ranks
+
+    dlp_mpi.barrier()
+    if RANK == 1:
+        time.sleep(0.1)
+    elif RANK == 2:
+        pass
+
+    results = []
+    for i in dlp_mpi.split_managed(examples, progress_bar=False):
+        assert dlp_mpi.RANK in [1, 2], (dlp_mpi.RANK, dlp_mpi.SIZE)
+
+        if RANK == 1:
+            results.append(i)
+        elif RANK == 2:
+            results.append(i)
+            time.sleep(0.2)
+
+    if RANK == 1:
+        assert results in [[0, 2, 3, 4], [1, 2, 3, 4]], results
+    elif RANK == 2:
+        assert results in [[1], [0]], results
+
+    for i in dlp_mpi.split_managed(examples, progress_bar=False):
+        assert dlp_mpi.RANK in [1, 2], (dlp_mpi.RANK, dlp_mpi.SIZE)
+        if RANK == 1:
+            results.append(i)
+            time.sleep(0.001)
+        elif RANK == 2:
+            results.append(i)
+            time.sleep(0.2)
+
+    if RANK == 1:
+        assert results in [
+            [0, 2, 3, 4, 0, 2, 3, 4],
+            [0, 2, 3, 4, 1, 2, 3, 4],
+            [1, 2, 3, 4, 0, 2, 3, 4],
+            [1, 2, 3, 4, 1, 2, 3, 4],
+        ], results
+    elif RANK == 2:
+        assert results in [
+            [1, 1],
+            [1, 0],
+            [0, 1],
+            [0, 0],
+        ], results
+
+
 def worker_fails():
-    print(f'executable test {RANK}')
+    print(f'worker_fails test {RANK}')
 
     examples = list(range(5))
 
@@ -55,6 +110,8 @@ def worker_fails():
         dlp_mpi.barrier()
         if RANK == 2:
             # Delay rank 2, this ensures that rank 1 gets the first example
+            # Does no longer work, becasue in split_managed is COMM.Clone
+            # used.
             time.sleep(0.1)
         for i in dlp_mpi.split_managed(examples, progress_bar=False):
             processed.append(i)
@@ -64,7 +121,7 @@ def worker_fails():
             assert dlp_mpi.RANK in [1, 2], (dlp_mpi.RANK, dlp_mpi.SIZE)
     except ValueError:
         assert RANK in [1], RANK
-        assert processed == [0], processed
+        assert processed in [[0], [1]], processed
     except AssertionError:
         assert RANK in [0], RANK
         assert processed == [], processed
@@ -98,8 +155,7 @@ def pbar():
 
     import contextlib
     @contextlib.contextmanager
-    def mock_pbar(total, disable, mininterval, smoothing):
-        assert disable is False, disable
+    def mock_pbar(total, mininterval, smoothing):
         yield MockPbar()
 
     import mock
@@ -190,6 +246,8 @@ if __name__ == '__main__':
     executable()
     dlp_mpi.barrier()
     speedup()
+    dlp_mpi.barrier()
+    cross_communication()
     dlp_mpi.barrier()
     worker_fails()
     dlp_mpi.barrier()
