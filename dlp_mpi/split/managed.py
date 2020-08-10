@@ -2,7 +2,7 @@ from enum import IntEnum, auto
 
 import dlp_mpi
 from dlp_mpi import MPI, COMM
-from dlp_mpi import RANK, SIZE
+from dlp_mpi.mpi import RankInt
 
 
 __all__ = [
@@ -42,6 +42,7 @@ def split_managed(
         progress_bar=True,
         pbar_prefix=None,
         root=dlp_mpi.MASTER,
+        comm=None,
         # gather_mode=False,
 ):
     """
@@ -75,7 +76,24 @@ def split_managed(
           Change it that the execution get canceled.
 
     """
-    if allow_single_worker and SIZE == 1:
+
+    if comm is None:
+        # Clone does here two thinks.
+        # - It is a barrier and syncs all processes. This is not necessary
+        #   and may slightly worse the startup time.
+        # - Create a new communicator that ensures that all communication
+        #   (e.g. recv and send) are just inside this function.
+        #   This prevents some undesired cross communications between this
+        #   function and functions that are called after this function. This
+        #   could also be achieved with a barrier at the end of this function.
+        #   This style allows to shutdown workers when they are finished and
+        #   also do some failure handling after this function.
+        comm = COMM.Clone()
+
+    rank = RankInt(comm.rank)
+    size = comm.size
+
+    if allow_single_worker and size == 1:
         if not progress_bar:
             yield from sequence
         else:
@@ -83,7 +101,7 @@ def split_managed(
             yield from tqdm(sequence, mininterval=2)
         return
 
-    if SIZE <= 1:
+    if size <= 1:
         raise ValueError(
             'When you want to allow a single worker for split_managed,\n'
             'set allow_single_worker to True. i.e.:\n'
@@ -91,12 +109,12 @@ def split_managed(
             'Got: SIZE={SIZE}'
         )
 
-    assert SIZE > 1, (SIZE)
-    assert root < SIZE, (root, SIZE)
+    assert size > 1, (size)
+    assert root < size, (root, size)
     assert root == 0, root
 
     status = MPI.Status()
-    workers = SIZE - 1
+    workers = size - 1
 
     # ToDo: Ignore workers that failed before this function is called.
     # registered_workers = set()
@@ -105,14 +123,7 @@ def split_managed(
 
     failed_indices = []
 
-    # Clone acts as barrier and prevents the root process to receive wrong
-    # messages (i.e. when this function finishes on the worker they may can do
-    # again some communications).
-    # I don't want to use a barrier after this function, so the workers can
-    # shutdown once they did their work.
-    comm = COMM.Clone()
-
-    if RANK == root:
+    if rank == root:
         i = 0
 
         if pbar_prefix is None:
