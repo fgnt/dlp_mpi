@@ -1,5 +1,9 @@
 # dlp_mpi - Data-level parallelism with mpi for python
 
+[![PyPI](https://img.shields.io/pypi/v/dlp_mpi.svg)](https://pypi.org/project/dlp-mpi)
+[![PyPI](https://img.shields.io/pypi/dm/dlp_mpi)](https://pypi.org/project/dlp-mpi)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/fgnt/dlp_mpi/master/LICENSE)
+
 <table>
 <tr>
 <th>
