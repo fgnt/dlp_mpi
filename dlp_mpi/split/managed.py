@@ -2,7 +2,7 @@ from enum import IntEnum, auto
 
 import dlp_mpi
 from dlp_mpi import MPI, COMM
-from dlp_mpi import RANK, SIZE
+from dlp_mpi.mpi import RankInt
 
 
 __all__ = [
@@ -42,6 +42,7 @@ def split_managed(
         progress_bar=True,
         pbar_prefix=None,
         root=dlp_mpi.MASTER,
+        comm=None,
         # gather_mode=False,
 ):
     """
@@ -75,7 +76,24 @@ def split_managed(
           Change it that the execution get canceled.
 
     """
-    if allow_single_worker and SIZE == 1:
+
+    if comm is None:
+        # Clone does here two thinks.
+        # - It is a barrier and syncs all processes. This is not necessary
+        #   and may slightly worse the startup time.
+        # - Create a new communicator that ensures that all communication
+        #   (e.g. recv and send) are just inside this function.
+        #   This prevents some undesired cross communications between this
+        #   function and functions that are called after this function. This
+        #   could also be achieved with a barrier at the end of this function.
+        #   This style allows to shutdown workers when they are finished and
+        #   also do some failure handling after this function.
+        comm = COMM.Clone()
+
+    rank = RankInt(comm.rank)
+    size = comm.size
+
+    if allow_single_worker and size == 1:
         if not progress_bar:
             yield from sequence
         else:
@@ -83,7 +101,7 @@ def split_managed(
             yield from tqdm(sequence, mininterval=2)
         return
 
-    if SIZE <= 1:
+    if size <= 1:
         raise ValueError(
             'When you want to allow a single worker for split_managed,\n'
             'set allow_single_worker to True. i.e.:\n'
@@ -91,12 +109,12 @@ def split_managed(
             'Got: SIZE={SIZE}'
         )
 
-    assert SIZE > 1, (SIZE)
-    assert root < SIZE, (root, SIZE)
+    assert size > 1, (size)
+    assert root < size, (root, size)
     assert root == 0, root
 
     status = MPI.Status()
-    workers = SIZE - 1
+    workers = size - 1
 
     # ToDo: Ignore workers that failed before this function is called.
     # registered_workers = set()
@@ -105,7 +123,7 @@ def split_managed(
 
     failed_indices = []
 
-    if RANK == root:
+    if rank == root:
         i = 0
 
         if pbar_prefix is None:
@@ -119,14 +137,14 @@ def split_managed(
         ) as pbar:
             pbar.set_description(f'{pbar_prefix}busy: {workers}')
             while workers > 0:
-                last_index = COMM.recv(
+                last_index = comm.recv(
                     source=MPI.ANY_SOURCE,
                     tag=MPI.ANY_TAG,
                     status=status,
                 )
 
                 if status.tag in [_tags.default, _tags.start]:
-                    COMM.send(i, dest=status.source)
+                    comm.send(i, dest=status.source)
                     i += 1
 
                 if status.tag in [_tags.default, _tags.failed]:
@@ -163,8 +181,8 @@ def split_managed(
         next_index = -1
         successful = False
         try:
-            COMM.send(None, dest=root, tag=_tags.start)
-            next_index = COMM.recv(source=root)
+            comm.send(None, dest=root, tag=_tags.start)
+            next_index = comm.recv(source=root)
 
             if not is_indexable:
                 for i, val in enumerate(sequence):
@@ -172,8 +190,8 @@ def split_managed(
                         assert val is not None, val
                         data = yield val
                         assert data is None, data
-                        COMM.send(next_index, dest=root, tag=_tags.default)
-                        next_index = COMM.recv(source=root)
+                        comm.send(next_index, dest=root, tag=_tags.default)
+                        next_index = comm.recv(source=root)
             else:
                 length = len(sequence)
                 assert length is not None, length
@@ -183,15 +201,15 @@ def split_managed(
                     assert val is not None, val
                     data = yield val
                     assert data is None, data
-                    COMM.send(next_index, dest=root, tag=_tags.default)
-                    next_index = COMM.recv(source=root)
+                    comm.send(next_index, dest=root, tag=_tags.default)
+                    next_index = comm.recv(source=root)
 
             successful = True
         finally:
             if successful:
-                COMM.send(next_index, dest=root, tag=_tags.stop)
+                comm.send(next_index, dest=root, tag=_tags.stop)
             else:
-                COMM.send(next_index, dest=root, tag=_tags.failed)
+                comm.send(next_index, dest=root, tag=_tags.failed)
 
 '''
 def split_managed_(

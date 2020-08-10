@@ -1,5 +1,6 @@
 import dlp_mpi
 from dlp_mpi import MPI, COMM
+from dlp_mpi.mpi import RankInt
 
 __all__ = [
     'map_unordered',
@@ -12,7 +13,7 @@ def map_unordered(
         *,
         progress_bar=False,
         indexable=True,
-
+        comm=None,
 ):
     """
     Similar to the builtin function map, but the function is executed on the
@@ -40,7 +41,23 @@ def map_unordered(
     from tqdm import tqdm
     from enum import IntEnum, auto
 
-    if dlp_mpi.SIZE == 1:
+    if comm is None:
+        # Clone does here two thinks.
+        # - It is a barrier and syncs all processes. This is not necessary
+        #   and may slightly worse the startup time.
+        # - Create a new communicator that ensures that all communication
+        #   (e.g. recv and send) are just inside this function.
+        #   This prevents some undesired cross communications between this
+        #   function and functions that are called after this function. This
+        #   could also be achieved with a barrier at the end of this function.
+        #   This style allows to shutdown workers when they are finished and
+        #   also do some failure handling after this function.
+        comm = COMM.Clone()
+
+    rank = RankInt(comm.rank)
+    size = comm.size
+
+    if size == 1:
         if progress_bar:
             yield from tqdm(map(func, sequence))
             return
@@ -48,8 +65,9 @@ def map_unordered(
             yield from map(func, sequence)
             return
 
+
     status = MPI.Status()
-    workers = dlp_mpi.SIZE - 1
+    workers = size - 1
 
     class tags(IntEnum):
         """Avoids magic constants."""
@@ -60,7 +78,7 @@ def map_unordered(
 
     # dlp_mpi.barrier()
 
-    if dlp_mpi.RANK == 0:
+    if rank == 0:
         i = 0
 
         failed_indices = []
@@ -71,12 +89,12 @@ def map_unordered(
         ) as pbar:
             pbar.set_description(f'busy: {workers}')
             while workers > 0:
-                result = COMM.recv(
+                result = comm.recv(
                     source=MPI.ANY_SOURCE,
                     tag=MPI.ANY_TAG,
                     status=status)
                 if status.tag in [tags.default, tags.start]:
-                    COMM.send(i, dest=status.source)
+                    comm.send(i, dest=status.source)
                     i += 1
                 if status.tag in [tags.default]:
                     yield result
@@ -112,8 +130,8 @@ def map_unordered(
     else:
         next_index = -1
         try:
-            COMM.send(None, dest=0, tag=tags.start)
-            next_index = COMM.recv(source=0)
+            comm.send(None, dest=0, tag=tags.start)
+            next_index = comm.recv(source=0)
             if indexable:
                 while True:
                     try:
@@ -121,16 +139,16 @@ def map_unordered(
                     except IndexError:
                         break
                     result = func(val)
-                    COMM.send(result, dest=0, tag=tags.default)
-                    next_index = COMM.recv(source=0)
+                    comm.send(result, dest=0, tag=tags.default)
+                    next_index = comm.recv(source=0)
             else:
                 for i, val in enumerate(sequence):
                     if i == next_index:
                         result = func(val)
-                        COMM.send(result, dest=0, tag=tags.default)
-                        next_index = COMM.recv(source=0)
+                        comm.send(result, dest=0, tag=tags.default)
+                        next_index = comm.recv(source=0)
         except BaseException:
-            COMM.send(next_index, dest=0, tag=tags.failed)
+            comm.send(next_index, dest=0, tag=tags.failed)
             raise
         else:
-            COMM.send(None, dest=0, tag=tags.stop)
+            comm.send(None, dest=0, tag=tags.stop)
