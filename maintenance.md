@@ -18,7 +18,7 @@ pip install --upgrade bump2version
 `bump2version` takes care to increase the version number, create the commit and tag.
 
 ```bash
-bump2version --verbose --tag patch
+bump2version --verbose --tag patch  # major, minor or patch
 python setup.py sdist bdist_wheel
 git push origin --tags
 twine upload --repository-url https://test.pypi.org/legacy/ dist/*
