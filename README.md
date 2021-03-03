@@ -225,3 +225,9 @@ When you do not have the rights to install something with `apt`, you could also 
 The above `pip install` will install `mpi4py` from `pypi`.
 Be careful, that the installation from `conda` may conflict with your locally installed `mpi`. 
 Especially in High Performance Computing (HPC) environments this can cause troubles.
+
+# FAQ
+
+**Q**: Can I run a script that uses `dlp_mpi` on my laptop, that has no running MPI (i.e. broken installation)?
+
+**A**: Yes, when you uninstall `mpi4py` (i.e. `pip uninstall mpi4py`) after installing this package. When `MPI` is working or missing, code written with `dlp_mpi` should work.
