@@ -160,6 +160,24 @@ As an alternative to splitting the data, this package also provides a `map` styl
 The function `dlp_mpi.map_unordered` calls `work_load` in parallel and executes the `for` body in serial.
 The communication between the processes is only the `result` and the index to get the `i`th example from the examples, i.e., the example aren't transferred between the processes.
 
+# Availabel utilities and functions
+
+Note: `dlp_mpi` has dummy implementations, when `mpi4py` is not installed and the enviroment indicate that no MPI is used (Useful for running on a laptop).
+
+ - `dlp_mpi.RANK` or `mpi4py.MPI.COMM_WORLD.rank`: The rank of the process. To avoid programming errors, `if dlp_mpi.RANK: ...` will fail.
+ - `dlp_mpi.SIZE` or `mpi4py.MPI.COMM_WORLD.size`: The number of processes.
+ - `dlp_mpi.IS_MASTER`: A flag that indicates whether the process is the default master/controller/root.
+ - `dlp_mpi.bast(...)` or `mpi4py.MPI.COMM_WORLD.bast(...)`: Broadcast the data from the root to all workers.
+ - `dlp_mpi.gather(...)` or `mpi4py.MPI.COMM_WORLD.gather(...)`: Send data from all workers to the root.
+ - `dlp_mpi.barrier()` or `mpi4py.MPI.COMM_WORLD.Barrier()`: Sync all prosesses.
+
+The advanced functions that are provided in this package are
+
+ - `split_round_robin(examples)`: Zero communication split of the data. The default is identically to `examples[dlp_mpi.RANK::dlp_mpi.SIZE]`.
+ - `split_managed(examples)`: The master process manages the load balance, while the others do the work. Note: The master process does not distribute the examples. It is assumed that examples have the same order on each worker.
+ - `map_unordered(work_load, examples)`: The master process manages the load balance, while the others execute the `work_load` function. The result is send back to the master process.
+
+
 # Runtime
 
 Without this package your code runs in serial.
