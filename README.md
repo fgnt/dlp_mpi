@@ -34,6 +34,7 @@ results = []
 
 
 
+
 for example in examples:
 
     # Some heavy workload:
@@ -67,6 +68,7 @@ import dlp_mpi
 
 examples = list(range(10))
 results = []
+
 
 
 
@@ -113,6 +115,7 @@ def work_load(example):
     # CPU or IO
     time.sleep(0.2)
     result = example
+    return result
 
 for result in dlp_mpi.map_unordered(
         work_load, examples):
