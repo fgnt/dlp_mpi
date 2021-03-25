@@ -30,16 +30,15 @@ def progress_bar(
                     smoothing=None,
             ) as pbar:
                 yield pbar
-            return
+    else:
+        class DummyPBar:
+            def set_description(self, *args, **kwargs):
+                pass
 
-    class DummyPBar:
-        def set_description(self, *args, **kwargs):
-            pass
+            def update(self, *args, **kwargs):
+                pass
 
-        def update(self, *args, **kwargs):
-            pass
-
-    yield DummyPBar()
+        yield DummyPBar()
 
 
 def ensure_single_thread_numeric():

@@ -59,7 +59,11 @@ def map_unordered(
 
     if size == 1:
         if progress_bar:
-            yield from tqdm(map(func, sequence))
+            try:
+                total = len(sequence)
+            except TypeError:
+                total = None
+            yield from tqdm(map(func, sequence), total=total)
             return
         else:
             yield from map(func, sequence)
