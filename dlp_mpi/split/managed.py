@@ -106,7 +106,7 @@ def split_managed(
             'When you want to allow a single worker for split_managed,\n'
             'set allow_single_worker to True. i.e.:\n'
             'for ... in split_managed(..., allow_single_worker=True): ...\n'
-            'Got: SIZE={SIZE}'
+            f'Got: size={size}'
         )
 
     assert size > 1, (size)

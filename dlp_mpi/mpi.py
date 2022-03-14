@@ -84,6 +84,7 @@ except ImportError:
         Barrier = lambda self: None
         bcast = lambda self, data, *args, **kwargs: data
         gather = lambda self, data, *args, **kwargs: [data]
+        Clone = lambda self: self
 
     class _dummy_MPI:
         COMM_WORLD = DUMMY_COMM_WORLD()
