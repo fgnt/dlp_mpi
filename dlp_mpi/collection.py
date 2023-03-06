@@ -1,4 +1,5 @@
 import collections
+import itertools
 import dlp_mpi
 
 
@@ -107,3 +108,53 @@ class NestedDict:
             return deflatten(merged_data, sep=None)
         else:
             return data
+
+
+class UnorderedList:
+    """
+    Implements a subset of the methods of list:
+     - l.append(...)
+     - l.extend(...)
+     - l += [...]
+    but no operation to read data.
+    To collate the data, this objects has a 'gather' method, e.g.
+     - l = l.gather()  # Returns a `list`, not `UnorderedList`.
+    where the data is moved via MPI to the root process and all lists
+    are concaternated.
+    Note the insertion order is not kept, hance the name unordered and in
+    contrast to a set, duplicate and non hashable elements can exist in this
+    container.
+
+    Toy example (i.e. without multiple processes):
+
+        >>> l = UnorderedList()
+        >>> l.append('1')
+        >>> l.extend(['1'])
+        >>> l += [1]
+        >>> l = l.gather()
+        >>> if dlp_mpi.IS_MASTER:
+        ...     print(l)
+        ['1', '1', 1]
+
+    """
+
+    def __init__(self):
+        self._data: list = []
+
+    def append(self, object):
+        return self._data.append(object)
+
+    def extend(self, iterable):
+        return self._data.extend(iterable)
+
+    def __iadd__(self, other):
+        self._data.__iadd__(other)
+        return self
+
+    def gather(self, root=dlp_mpi.MASTER):
+        """
+        Call `dlp_mpi.gather` and sync the data.
+        """
+        data = dlp_mpi.gather(self._data, root)
+        if dlp_mpi.IS_MASTER:
+            return list(itertools.chain(*data))
