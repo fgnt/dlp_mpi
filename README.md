@@ -167,7 +167,7 @@ Note: `dlp_mpi` has dummy implementations, when `mpi4py` is not installed and th
  - `dlp_mpi.RANK` or `mpi4py.MPI.COMM_WORLD.rank`: The rank of the process. To avoid programming errors, `if dlp_mpi.RANK: ...` will fail.
  - `dlp_mpi.SIZE` or `mpi4py.MPI.COMM_WORLD.size`: The number of processes.
  - `dlp_mpi.IS_MASTER`: A flag that indicates whether the process is the default master/controller/root.
- - `dlp_mpi.bast(...)` or `mpi4py.MPI.COMM_WORLD.bast(...)`: Broadcast the data from the root to all workers.
+ - `dlp_mpi.bcast(...)` or `mpi4py.MPI.COMM_WORLD.bcast(...)`: Broadcast the data from the root to all workers.
  - `dlp_mpi.gather(...)` or `mpi4py.MPI.COMM_WORLD.gather(...)`: Send data from all workers to the root.
  - `dlp_mpi.barrier()` or `mpi4py.MPI.COMM_WORLD.Barrier()`: Sync all prosesses.
 
