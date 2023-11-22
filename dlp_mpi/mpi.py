@@ -31,8 +31,10 @@ __all__ = [
     'call_on_root_and_broadcast',
 ]
 
-
 try:
+    if os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown') == '1':
+        # MPI not necessary, see except, where this prevents a bug.
+        raise ImportError()
 
     from mpi4py import MPI
     if MPI.COMM_WORLD.size > 1:
@@ -53,10 +55,15 @@ except ImportError:
     _mpi_available = False
 
     if 'PC2SYSNAME' in os.environ:
-        # No fallback to single core, when the code is executed on our HPC
-        # system (PC2).
-        # PC2SYSNAME is 'OCULUS' or 'Noctua'
-        raise
+        if os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown') == '1':
+            # We are on a PC2 node, but in a slurm job with one TASK. Since the
+            # MPI implementation is buggy, it is better to disable it, if it is
+            # not used.
+            # Bug: The second MPI Job in a job step fails.
+            pass
+        else:
+            # PC2SYSNAME is 'OCULUS' or 'Noctua'
+            raise
 
     if int(os.environ.get('OMPI_COMM_WORLD_SIZE', '1')) != 1:
         print(
