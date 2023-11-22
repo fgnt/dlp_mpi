@@ -70,3 +70,22 @@ def ensure_single_thread_numeric():
                 'export MKL_NUM_THREADS=1\n\n'
                 f'But you use: {key}={os.environ.get(key)}'
             )
+
+
+def maybe_warn_if_slurm():
+    SLURM_NTASKS = int(os.environ.get('SLURM_NTASKS', 1))
+
+    # print('maybe_warn_if_slurm SLURM_NTASKS', SLURM_NTASKS)
+
+    if SLURM_NTASKS > 1:
+        from mpi4py import MPI
+        SIZE = MPI.COMM_WORLD.size
+        # print('maybe_warn_if_slurm SIZE', SIZE)
+        if SIZE == 1:
+            import warnings
+
+            warnings.warn(
+                f'dlp_mpi: Your SLURM job can use up to {SLURM_NTASKS} '
+                f'tasks/MPI processes,\n'
+                f'but MPI SIZE is only 1. Maybe you forgot srun?'
+            )
