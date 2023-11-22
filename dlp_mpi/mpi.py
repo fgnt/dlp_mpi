@@ -12,7 +12,10 @@ If you want to implement Round-Robin execution, you can try this::
         pass
 """
 import os
-from dlp_mpi.util import ensure_single_thread_numeric
+import sys
+
+import dlp_mpi
+from dlp_mpi.util import ensure_single_thread_numeric, maybe_warn_if_slurm
 
 
 __all__ = [
@@ -25,10 +28,12 @@ __all__ = [
     'gather',
     'MPI',
     'COMM',
+    'call_on_root_and_broadcast',
 ]
 
 
 try:
+
     from mpi4py import MPI
     if MPI.COMM_WORLD.size > 1:
         if False:
@@ -42,6 +47,7 @@ try:
             # concepts to use multicores.
         else:
             ensure_single_thread_numeric()
+    maybe_warn_if_slurm()
     _mpi_available = True
 except ImportError:
     _mpi_available = False
@@ -74,6 +80,7 @@ except ImportError:
         )
         raise
 
+if not _mpi_available:
     # Fallback to a dummy mpi implementation to run on platforms that do not
     # support mpi or computers that do not need mpi, e.g. on a development
     # notebook mpi may not be installed.
@@ -103,8 +110,14 @@ class RankInt(int):
 COMM = MPI.COMM_WORLD
 RANK = RankInt(COMM.rank)
 SIZE = COMM.size
+
+# MASTER is deprecated, and all usages in dlp_mpi should be replaced by ROOT.
+# Here, we plan to keep it for external code.
 MASTER = RankInt(0)
 IS_MASTER = (RANK == MASTER)
+
+ROOT = RankInt(0)
+IS_ROOT = (RANK == ROOT)
 
 
 def barrier():
@@ -115,14 +128,23 @@ def barrier():
     COMM.Barrier()
 
 
-def bcast(obj, root: int=MASTER):
+def bcast(obj, root: int = ROOT):
     """
     Pickles the obj and send it from the root to all processes (i.e. broadcast)
     """
-    return COMM.bcast(obj, root)
+    try:
+        return COMM.bcast(obj, root)
+    except OverflowError:
+        raise ValueError(
+            'A typical cause for '
+            '''"OverflowError: integer XXXXXXXXXX does not fit in 'int'"\n'''
+            'is a too large object.\n'
+            'See '
+            'https://bitbucket.org/mpi4py/mpi4py/issues/57/overflowerror-integer-2768896564-does-not'
+        )
 
 
-def gather(obj, root: int=MASTER):
+def gather(obj, root: int = ROOT):
     """
     Pickles the obj on each process and send them to the root process.
     Returns a list on the master process that contains all objects.
@@ -130,7 +152,7 @@ def gather(obj, root: int=MASTER):
     return COMM.gather(obj, root=root)
 
 
-def call_on_master_and_broadcast(func, *args, **kwargs):
+def call_on_root_and_broadcast(func, *args, **kwargs):
     if IS_MASTER:
         result = func(*args, **kwargs)
     else:
