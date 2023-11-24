@@ -12,6 +12,7 @@ def map_unordered(
         sequence,
         *,
         progress_bar=False,
+        pbar_prefix=None,
         indexable=True,
         comm=None,
 ):
@@ -87,11 +88,16 @@ def map_unordered(
 
         failed_indices = []
 
+        if pbar_prefix is None:
+            pbar_prefix = ''
+        else:
+            pbar_prefix = f'{pbar_prefix}, '
+
         with dlp_mpi.util.progress_bar(
                 sequence=sequence,
                 display_progress_bar=progress_bar,
         ) as pbar:
-            pbar.set_description(f'busy: {workers}')
+            pbar.set_description(f'{pbar_prefix}busy: {workers}')
             while workers > 0:
                 result = comm.recv(
                     source=MPI.ANY_SOURCE,
@@ -108,7 +114,7 @@ def map_unordered(
                 if status.tag in [tags.stop, tags.failed]:
                     workers -= 1
                     if progress_bar:
-                        pbar.set_description(f'busy: {workers}')
+                        pbar.set_description(f'{pbar_prefix}busy: {workers}')
                 if status.tag in [tags.failed]:
                     last_index = result
                     failed_indices += [(status.source, last_index)]
