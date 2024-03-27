@@ -32,8 +32,12 @@ __all__ = [
 ]
 
 try:
-    if os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown') == '1':
-        # MPI not necessary, see except, where this prevents a bug.
+    if 'PC2SYSNAME' in os.environ and os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown') == '1':
+        # MPI not necessary.
+        # We are on a PC2 node, but in a slurm job with more than one TASK.
+        # Since the MPI implementation is buggy, it is better to disable it, if
+        # it is not used.
+        # Bug: The second MPI Job in a job step fails.
         raise ImportError()
 
     from mpi4py import MPI
@@ -53,17 +57,6 @@ try:
     _mpi_available = True
 except ImportError:
     _mpi_available = False
-
-    if 'PC2SYSNAME' in os.environ:
-        if os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown') == '1':
-            # We are on a PC2 node, but in a slurm job with one TASK. Since the
-            # MPI implementation is buggy, it is better to disable it, if it is
-            # not used.
-            # Bug: The second MPI Job in a job step fails.
-            pass
-        else:
-            # PC2SYSNAME is 'OCULUS' or 'Noctua'
-            raise
 
     if int(os.environ.get('OMPI_COMM_WORLD_SIZE', '1')) != 1:
         print(
@@ -86,6 +79,10 @@ except ImportError:
             f'Try to uninstall mpi4py and install it with "pip install mpi4py"'
         )
         raise
+
+    if int(os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown')) != 1:
+        raise
+
 
 if not _mpi_available:
     # Fallback to a dummy mpi implementation to run on platforms that do not
