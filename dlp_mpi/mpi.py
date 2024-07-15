@@ -84,7 +84,7 @@ except ImportError:
         )
         raise
 
-    if int(os.environ.get('SLURM_STEP_NUM_TASKS', 'unknown')) != 1:
+    if int(os.environ.get('SLURM_STEP_NUM_TASKS', '1')) != 1:
         raise
 
 
