@@ -40,7 +40,11 @@ try:
         # Bug: The second MPI Job in a job step fails.
         raise ImportError()
 
-    from mpi4py import MPI
+    if 'AME_RANK' in os.environ or os.environ.get('DLP_MPI_BACKEND', 'mpi4py').lower() == 'ame':
+        from ame import MPI
+    else:
+        from mpi4py import MPI
+
     if MPI.COMM_WORLD.size > 1:
         if False:
             # Usually data-level parallelism is better than low-level
