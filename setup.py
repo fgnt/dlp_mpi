@@ -48,7 +48,7 @@ setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Data-level parallelism with mpi in python',  # Optional
+    description='Data-level parallelism with MPI in python',  # Optional
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -142,7 +142,7 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'mpi4py'
+        # 'mpi4py'
         # 'peppercorn'
     ],  # Optional
 
@@ -185,9 +185,10 @@ setup(
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
-        # 'console_scripts': [
-        #     'sample=sample:main',
-        # ],
+        'console_scripts': [
+            'amerun=dlp_mpi.ame.mpirun.__main__:launch',
+            'ameexec=dlp_mpi.ame.mpirun.__main__:launch',
+        ],
     },
 
     # List additional URLs that are relevant to your project as a dict.
