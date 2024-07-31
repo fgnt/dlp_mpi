@@ -11,7 +11,7 @@ def get_free_port():
         return s.getsockname()[1]
 
 
-def _in_thread(host, port, rank, size, callback, out: dict):
+def _in_thread(*, host, port, rank, size, authkey, callback, out: dict):
     """
     >>> _in_thread('localhost', 12345, 0, 2, lambda rank, size: print(f'Hello from {rank}/{size}'), {})
     Hello from 0/2
@@ -20,7 +20,7 @@ def _in_thread(host, port, rank, size, callback, out: dict):
     import inspect
     kwargs = {
         k: v
-        for k, v in dict(host=host, port=port, rank=rank, size=size).items()
+        for k, v in dict(host=host, port=port, rank=rank, size=size, authkey=authkey).items()
         if k in inspect.signature(callback).parameters
     }
 
@@ -37,12 +37,13 @@ def thread_based_test(callback, size, in_main=0):
     port = get_free_port()
     # host = 'localhost'
     host = socket.gethostname()
+    authkey = b'abc'
     assert size > 0, size
 
     threads = {}
     out = {}
     for rank in sorted(range(size), key=lambda x: size if x == in_main else x):
-        kwargs = dict(host=host, port=port, rank=rank, size=size, callback=callback, out=out)
+        kwargs = dict(host=host, port=port, rank=rank, size=size, callback=callback, authkey=authkey, out=out)
         if rank == 0:
             _in_thread(**kwargs)
         else:
