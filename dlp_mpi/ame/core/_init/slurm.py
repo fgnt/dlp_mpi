@@ -6,19 +6,26 @@ def expand_node_list(node_list):
     """
     >>> expand_node_list('node[01-03,04,05]')
     ['node01', 'node02', 'node03', 'node04', 'node05']
+    >>> expand_node_list('node01')
+    ['node01']
     """
-    nodes = []
-    base, ranges = node_list.split('[')
-    range_parts = ranges.strip(']').split(',')
-    for range_part in range_parts:
-        if '-' in range_part:
-            start, end = range_part.split('-')
-            prefix_len = len(start)
-            for i in range(int(start), int(end) + 1):
-                nodes.append(f"{base}{str(i).zfill(prefix_len)}")
-        else:
-            nodes.append(f"{base}{range_part}")
-    return nodes
+    if '[' in node_list:
+        nodes = []
+        base, ranges = node_list.split('[')
+        range_parts = ranges.strip(']').split(',')
+        for range_part in range_parts:
+            if '-' in range_part:
+                start, end = range_part.split('-')
+                prefix_len = len(start)
+                for i in range(int(start), int(end) + 1):
+                    nodes.append(f"{base}{str(i).zfill(prefix_len)}")
+            else:
+                nodes.append(f"{base}{range_part}")
+        return nodes
+    elif ',' in node_list:
+        return node_list.split(',')
+    else:
+        return [node_list]
 
 
 def get_host_rank_size():
