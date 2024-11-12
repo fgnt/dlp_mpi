@@ -8,6 +8,7 @@ Hence, some code has its origin in the tutorial.
 import os
 import pickle
 import struct
+import sys
 import time
 import selectors
 import socket
@@ -190,13 +191,35 @@ class Clientv3(Mixin):
 
     def send(self, obj, dest, tag=ANY_TAG):
         assert dest == 0, dest
-        return self.msg_send(self.sock, tag, obj)
+        try:
+            return self.msg_send(self.sock, tag, obj)
+        except SocketClosed:
+            if DEBUG:
+                raise SocketClosed(
+                    f"Could not send {obj} from {self.rank} to {dest} with tag {tag}") from None
+            else:
+                # Usually, one process fails, while the others are still running.
+                # So in most cases, the SocketClosed is not the root of the
+                # problem, hence print only one line instead of a fill traceback.
+                info(f"Issue in send for RANK {self.rank}. Set DLP_MPI_DEBUG to get a traceback.")
+                sys.exit(1)
 
     def recv(self, source=ANY_SOURCE, tag=ANY_TAG, status=None):
         assert tag == ANY_TAG, (tag, f'Only ANY_TAG ({ANY_SOURCE}) is supported. Not {tag}')
         assert source in [0, ANY_SOURCE], source
 
-        data, msg_tag = self.msg_recv(self.sock)
+        try:
+            data, msg_tag = self.msg_recv(self.sock)
+        except SocketClosed:
+            if DEBUG:
+                raise SocketClosed(
+                    f"Could not receive on {self.rank} from {source} with tag {tag}") from None
+            else:
+                # Usually, one process fails, while the others are still running.
+                # So in most cases, the SocketClosed is not the root of the
+                # problem, hence print only one line instead of a fill traceback.
+                info(f"Issue in recv for RANK {self.rank}. Set DLP_MPI_DEBUG to get a traceback.")
+                sys.exit(1)
         if status:
             status.source = 0
             status.tag = msg_tag
@@ -275,20 +298,19 @@ def establish_connection_v3(host, port, rank, size, *, authkey, debug=False) -> 
                         if debug:
                             conn = _Socket(conn)
                         sel.register(conn, events, data=data)
+                    elif mask & selectors.EVENT_READ:
+                        if key.data.addr not in connected:
+                            other_rank, = struct.unpack(fmt, Mixin.recv_nbytes(key.fileobj, fmt_len))
+                            if authenticate_server_side(key.fileobj, authkey):
+                                key.data.rank = other_rank
+                                connected[key.data.addr] = (other_rank, key.fileobj)
+                            else:
+                                # print(f"Rank {rank} got wrong authkey from {key.data.addr}. Ignore connection. {outer_authkey} != {authkey}")
+                                pass
+                    elif mask & selectors.EVENT_WRITE:
+                        pass
                     else:
-                        if mask & selectors.EVENT_READ:
-                            if key.data.addr not in connected:
-                                other_rank, = struct.unpack(fmt, Mixin.recv_nbytes(key.fileobj, fmt_len))
-                                if authenticate_server_side(key.fileobj, authkey):
-                                    key.data.rank = other_rank
-                                    connected[key.data.addr] = (other_rank, key.fileobj)
-                                else:
-                                    # print(f"Rank {rank} got wrong authkey from {key.data.addr}. Ignore connection. {outer_authkey} != {authkey}")
-                                    pass
-                        elif mask & selectors.EVENT_WRITE:
-                            pass
-                        else:
-                            raise Exception('Got unexpected mask', mask, 'cannot happen.')
+                        raise Exception('Got unexpected mask', mask, 'cannot happen.')
 
                 if len(connected) == size - 1:
                     return Rootv3(sel, dict(connected), host, port, rank, size, debug)
@@ -296,7 +318,8 @@ def establish_connection_v3(host, port, rank, size, *, authkey, debug=False) -> 
         except KeyboardInterrupt:
             raise
     else:
-        for trial in range(100):
+        start_time = time.time()
+        for trial in range(1000):
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM).__enter__()
 
@@ -310,21 +333,25 @@ def establish_connection_v3(host, port, rank, size, *, authkey, debug=False) -> 
                 except BaseException:
                     s.__exit__(None, None, None)
                     raise
+                if trial >= 50:
+                    info(f"{rank} Connected to {host}:{port} after {trial} trials in {time.time() - start_time:.2f}s")
                 return Clientv3(s, host, port, rank, size, debug)
             except ConnectionRefusedError as e:
                 if trial < 10:
                     time.sleep(0.01)
                 elif trial < 20:
                     time.sleep(0.1)
-                elif trial < 30:
+                elif trial < 50:
                     if debug:
                         info(f"{rank} Could not connect to {host}:{port}. Try again in 1s")
                     time.sleep(1)
-                elif trial < 40:
+                elif trial < 100:
                     # This is serious, hence do the prints also without debug flag.
                     info(f"{rank} Could not connect to {host}:{port}. Try again in 10s")
                     time.sleep(10)
                 else:
+                    info(f"{rank} Could not connect to {host}:{port} after {time.time() - start_time:.2f}s. "
+                         f"Giving up.")
                     raise
 
 

@@ -36,6 +36,9 @@ class Communicator_v3:
             depth=0,
             debug=DEBUG,
     ):
+        assert isinstance(rank, int), (rank, type(rank))
+        assert isinstance(size, int), (size, type(size))
+
         self.rank = rank
         self.size = size
 
@@ -138,6 +141,7 @@ Communicator = Communicator_v3
 #
 #
 # MPI = _MPI()
+
 
 from ._init.get_init import get
 # _HOST, _PORT, RANK, SIZE, AUTHKEY = get()

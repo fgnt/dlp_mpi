@@ -5,13 +5,14 @@ from pathlib import Path
 def info(*args, color=True, frames=1):
     """
     >>> foo()  # doctest: +ELLIPSIS
-    logger.py:... foo debug message
+    logger.py:58 foo: debug message
     >>> Bar()()  # doctest: +ELLIPSIS
-    logger.py:... Bar.__call__ debug message
+    logger.py:63 Bar.__call__: debug message
+    >>> Bar().method_exception()  # doctest: +ELLIPSIS
     >>> Bar.static_method()  # doctest: +ELLIPSIS
-    logger.py:... Bar.static_method debug message
+    logger.py:67 Bar.static_method: debug message
     >>> Bar.class_method()  # doctest: +ELLIPSIS
-    logger.py:... Bar.class_method debug message
+    logger.py:71 Bar.class_method: debug message
     """
     class c:
         red = '\033[91m'
@@ -33,23 +34,31 @@ def info(*args, color=True, frames=1):
         for _ in range(i):
             outer_frame = outer_frame.f_back
         outer_frame_info = inspect.getframeinfo(outer_frame)
-        qualname = outer_frame.f_code.co_qualname
+        try:
+            qualname = outer_frame.f_code.co_qualname
+        except AttributeError:
+            # ToDO: Find a the reason and a proper fix for:
+            # AttributeError: 'code' object has no attribute 'co_qualname'. Did you mean: 'co_filename'?
+            qualname = '???'
+            # qualname = str(outer_frame.f_code)
+            # <code object recv at 0x..., file ".../dlp_mpi/dlp_mpi/ame/core/con_v3.py", line 207>
 
         file = Path(outer_frame_info.filename).name
         file_color = {
             'core.py': c.cyan,
             'p2p.py': c.yellow,
+            'con_v3.py': c.yellow,
         }.get(file, c.red)
-        file = f'{Path(outer_frame_info.filename).name}:{outer_frame_info.lineno} {file}'
+        file = f'{file}:{outer_frame_info.lineno}'
 
         if color:
             file = f'{file_color}{file}{c.reset}'
             qualname = f'{c.magenta}{qualname}{c.reset}'
 
         if i == 0:
-            msg.append(f'{prefix}{file}::{qualname} {" ".join(map(str, args))}')
+            msg.append(f'{prefix}{file} {qualname}: {" ".join(map(str, args))}')
         else:
-            msg.append(f'{prefix}{file}::{qualname}')
+            msg.append(f'{prefix}{file} {qualname}')
         prefix = f'{" "*len(prefix)} ⤷ '
     print(*msg, sep='\n')
 
@@ -61,6 +70,12 @@ def foo():
 class Bar:
     def __call__(self):
         info('debug message', color=False)
+
+    def method_exception(self):
+        try:
+            raise Exception
+        except Exception:
+            [info('debug message', color=False)]
 
     @staticmethod
     def static_method():

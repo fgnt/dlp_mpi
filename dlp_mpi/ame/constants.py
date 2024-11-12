@@ -8,7 +8,9 @@ __all__ = [
     'AUTHKEY_LENGTH',
 ]
 
-DEBUG = False
+import os
+
+DEBUG = bool(os.environ.get('DLP_MPI_DEBUG', False))
 
 # MPI constants
 ANY_SOURCE = -2
