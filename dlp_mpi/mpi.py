@@ -41,7 +41,7 @@ try:
         raise ImportError()
 
     if 'AME_RANK' in os.environ or os.environ.get('DLP_MPI_BACKEND', 'mpi4py').lower() == 'ame':
-        from ame import MPI
+        from dlp_mpi.ame import MPI
     else:
         from mpi4py import MPI
 
