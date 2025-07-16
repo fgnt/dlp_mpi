@@ -155,6 +155,8 @@ setup(
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     extras_require={  # Optional
+        'mpi4py': ['mpi4py'],
+        'all': ['mpi4py'],
         # 'dev': ['check-manifest'],
         # 'test': ['coverage'],
     },
