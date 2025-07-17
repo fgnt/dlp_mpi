@@ -39,11 +39,21 @@ try:
         # it is not used.
         # Bug: The second MPI Job in a job step fails.
         raise ImportError()
+    
+    _backend = os.environ.get('DLP_MPI_BACKEND', '').lower()
 
-    if 'AME_RANK' in os.environ or os.environ.get('DLP_MPI_BACKEND', 'mpi4py').lower() == 'ame':
+    if _backend == 'ame':
         from dlp_mpi.ame import MPI
-    else:
+    elif _backend in ['mpi4py', '']:
         from mpi4py import MPI
+    elif _backend == '' and 'AME_RANK' in os.environ:
+        from dlp_mpi.ame import MPI
+    elif _backend == 'none':
+        raise ImportError("No backend selected. If you see this, you started a job with MPI, while DLP_MPI_BACKEND=none.")
+    else:
+        raise RuntimeError(f'Unknown DLP_MPI_BACKEND: {_backend}.\n'
+                           'Please set it to "ame" or "mpi4py".\n'
+                           'If you unset it, it will default to "mpi4py".')
 
     if MPI.COMM_WORLD.size > 1:
         if False:
