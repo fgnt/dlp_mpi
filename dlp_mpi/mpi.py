@@ -97,6 +97,11 @@ except ImportError:
     if int(os.environ.get('SLURM_STEP_NUM_TASKS', '1')) != 1:
         raise
 
+    _backend == 'none'
+
+
+print(f'Using {_backend!r} as backend (DLP_MPI_BACKEND={os.environ.get("DLP_MPI_BACKEND", "")})')
+
 
 if not _mpi_available:
     # Fallback to a dummy mpi implementation to run on platforms that do not
