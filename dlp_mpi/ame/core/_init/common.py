@@ -41,13 +41,14 @@ def get_authkey(force_random=False):
 
     >>> len(get_authkey()), type(get_authkey())
     (64, <class 'bytes'>)
-    >>> os.environ['AME_AUTHKEY'] = 'test'
+    >>> os.environ['AME_AUTHKEY'] = authkey_decode(b'test' * 16)
     >>> len(get_authkey()), type(get_authkey())
-    (3, <class 'bytes'>)
+    (64, <class 'bytes'>)
     >>> del os.environ['AME_AUTHKEY']
     """
     if not force_random and 'AME_AUTHKEY' in os.environ:
         authkey = os.environ['AME_AUTHKEY']
+        
         return authkey_encode(authkey)
     return os.urandom(AUTHKEY_LENGTH)
 
@@ -84,6 +85,6 @@ def authkey_encode(authkey):
     >>> authkey_encode('dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdA==')
     b'testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttest'
     """
-    authkey = base64.b64decode(authkey.encode('utf-8'))
-    assert len(authkey) == AUTHKEY_LENGTH, (len(authkey), AUTHKEY_LENGTH)
-    return authkey
+    authkey_ = base64.b64decode(authkey.encode('utf-8'))
+    assert len(authkey_) == AUTHKEY_LENGTH, (len(authkey_), len(authkey), AUTHKEY_LENGTH)
+    return authkey_

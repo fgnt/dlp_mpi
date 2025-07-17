@@ -5,14 +5,15 @@ from pathlib import Path
 def info(*args, color=True, frames=1):
     """
     >>> foo()  # doctest: +ELLIPSIS
-    logger.py:58 foo: debug message
+    logger.py:68 foo: debug message
     >>> Bar()()  # doctest: +ELLIPSIS
-    logger.py:63 Bar.__call__: debug message
+    logger.py:73 Bar.__call__: debug message
     >>> Bar().method_exception()  # doctest: +ELLIPSIS
+    logger.py:79 Bar.method_exception: debug message
     >>> Bar.static_method()  # doctest: +ELLIPSIS
-    logger.py:67 Bar.static_method: debug message
+    logger.py:83 Bar.static_method: debug message
     >>> Bar.class_method()  # doctest: +ELLIPSIS
-    logger.py:71 Bar.class_method: debug message
+    logger.py:87 Bar.class_method: debug message
     """
     class c:
         red = '\033[91m'

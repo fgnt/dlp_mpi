@@ -13,7 +13,7 @@ def get_free_port():
 
 def _in_thread(*, host, port, port2, rank, size, authkey, callback, out: dict):
     """
-    >>> _in_thread('localhost', 12345, 0, 2, lambda rank, size: print(f'Hello from {rank}/{size}'), {})
+    >>> _in_thread(host='localhost', port=12345, port2=12346, rank=0, size=2, authkey=b'abc', callback=lambda rank, size: print(f'Hello from {rank}/{size}'), out={})
     Hello from 0/2
     """
 

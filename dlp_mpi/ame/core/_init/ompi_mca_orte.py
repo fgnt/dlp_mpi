@@ -10,7 +10,7 @@ def get_host_rank_size():
     >>> import os
     >>> os.environ['OMPI_COMM_WORLD_RANK'] = '0'
     >>> os.environ['OMPI_COMM_WORLD_SIZE'] = '2'
-    >>> with tempfile.TemporaryDirectory() as tmpdir:
+    >>> with tempfile.TemporaryDirectory() as tmpdir:  # doctest: +ELLIPSIS
     ...     os.environ['OMPI_MCA_orte_top_session_dir'] = tmpdir
     ...     *vars, authkey1 = get_host_rank_size()
     ...     print(vars)
@@ -18,8 +18,8 @@ def get_host_rank_size():
     ...     *vars, authkey2 = get_host_rank_size()
     ...     print(vars)
     ...     assert authkey1 == authkey2
-    ['T470', 47995, 0, 2]
-    ['T470', '47995', 1, 2]
+    ['...', ..., 0, 2]
+    ['...', ..., 1, 2]
     """
 
     # Using PMIx would be better, but I couldn't find how to get it work.

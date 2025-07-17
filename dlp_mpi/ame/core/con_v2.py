@@ -482,10 +482,10 @@ async def establish_connection(
         # runner,
         *,
         depth,
-        host=_HOST,  # IP of rank 0
-        port=_PORT,  # port of rank 0
-        rank=RANK,  # rank of this process
-        size=SIZE,
+        host,  # IP of rank 0
+        port,  # port of rank 0
+        rank,  # rank of this process
+        size,
         debug=DEBUG,
 ):
     rank_to_p2p = Dispatcher()

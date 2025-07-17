@@ -44,7 +44,7 @@ class PMI:
             print(f'Received ({rank}):', response.decode().strip(), flush=True)
         if check_rc:
             try:
-                rc = int(re.search(b'rc=(\d+)', response).group(1))
+                rc = int(re.search(b'rc=(\\d+)', response).group(1))
             except Exception:
                 raise RuntimeError('Could not parse return code', response)
             if rc != 0:

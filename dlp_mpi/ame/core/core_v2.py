@@ -5,9 +5,9 @@ import json
 import pickle
 
 
-from ame.core.constants import *
-from ame.core.con_v2 import P2Pv2, establish_connection
-from ame.core.logger import info
+from dlp_mpi.ame.constants import *
+from dlp_mpi.ame.core.con_v2 import P2Pv2, establish_connection
+from dlp_mpi.ame.core.logger import info
 # from ame.core.con import establish_connection_v3
 
 
@@ -50,10 +50,10 @@ class Communicator_v2:
     def __init__(
             self,
             *,
-            rank=RANK,
-            size=SIZE,
-            port=_PORT,
-            host=_HOST,
+            rank,
+            size,
+            port,
+            host,
             _runner=None,
             _depth=0,
             debug=DEBUG,
@@ -236,8 +236,8 @@ class Communicator_v2:
 
 Communicator = Communicator_v2
 
-try:
-    COMM_WORLD = Communicator(rank=RANK, size=SIZE)
-    COMM = COMM_WORLD
-except Exception:
-    raise RuntimeError(RANK, SIZE)
+# try:
+#     COMM_WORLD = Communicator(rank=RANK, size=SIZE)
+#     COMM = COMM_WORLD
+# except Exception:
+#     raise RuntimeError(RANK, SIZE)
