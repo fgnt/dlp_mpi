@@ -28,7 +28,9 @@ extras_require['pmix'] = ['cffi']
 extras_require['test'] = [
     *extras_require['optional'], *extras_require['mpi4py'], *extras_require['pmix'], 
     'pytest',
+    'pytest-cov',
     'numpy',
+    'flake8'
 ]
 extras_require['all'] = list(dict.fromkeys([
     e for k, v in extras_require.items() if k != 'all' for e in v

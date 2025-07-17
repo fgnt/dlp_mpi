@@ -4,10 +4,25 @@ import tempfile
 import shlex
 import pytest
 import os
+import sys
 
 
 examples_folder = Path(__file__).parent.parent / 'examples'
 
+
+if sys.version_info < (3, 11):
+    class CalledProcessError(subprocess.CalledProcessError):
+        __notes__ = None
+
+        def add_note(self, note):
+            if self.__notes__ is None:
+                self.__notes__ = []
+            self.__notes__.append(note)
+        def __str__(self):
+            msg = super().__str__()
+            if self.__notes__:
+                msg += '\n' + '\n'.join(self.__notes__)
+            return msg
 
 def run(cmd, cwd=None, check=True, **kwargs):
     """Run a command in a subprocess."""
@@ -15,18 +30,20 @@ def run(cmd, cwd=None, check=True, **kwargs):
         return subprocess.run(cmd, shell=isinstance(cmd, str), check=check, capture_output=True, text=True, cwd=cwd, universal_newlines=True,
                               **kwargs)
     except subprocess.CalledProcessError as e:
+        if not hasattr(e, 'add_note'):
+            e.__class__ = CalledProcessError  # type: ignore
         e.add_note(f'\n\nstdout: {e.stdout}\nstderr: {e.stderr}')
         raise
 
 
 def test():
-    result = run("mpiexec --oversubscribe -np 2 python -c 'import dlp_mpi; print(dlp_mpi.RANK)'")
+    result = run(f"mpiexec --oversubscribe -np 2 {sys.executable} -c 'import dlp_mpi; print(dlp_mpi.RANK)'")
     assert result.stdout in ['0\n1\n', '1\n0\n'], f"Unexpected output: {result.stdout}"
 
 
 def exec_code(code, size=2, backend='ame'):
     """
-    Execute code with mpiexec -np <size> ....
+    Execute code with mpiexec -np <size> python ....
 
     Catch the stdout of each rank and return it, ordered by RANK.
 
@@ -39,14 +56,17 @@ def exec_code(code, size=2, backend='ame'):
         try:
             # --oversubscribe: mpiexec fails, if the number of physical cores is less than SIZE.
             #                  With this option it will run anyway.
-            run(["mpiexec", "--oversubscribe", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"],
+            run(["mpiexec", "--oversubscribe", "-np", f"{size}", "bash", "-c", f"{sys.executable} {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"],
                 cwd=tmpdir, env=env)
         except subprocess.CalledProcessError as e:
+            if not hasattr(e, 'add_note'):
+                e.__class__ = CalledProcessError  # type: ignore
             for rank in range(size):
                 try:
                     e.add_note(f'\nOutput from rank {rank}:\n' + (tmpdir / f"{rank}.txt").read_text() + '\n')
                 except FileNotFoundError:
                     e.add_note(f"\nOutput file for rank {rank} not found.\n")
+
             raise
 
         assert set(tmpdir.glob("*.txt")) == {tmpdir / f"{rank}.txt" for rank in range(size)}, f"Expected {size} output files, found: {list(tmpdir.glob('*.txt'))}"
