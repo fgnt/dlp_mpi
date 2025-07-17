@@ -16,7 +16,7 @@ def run(cmd, cwd=None, check=True):
 
 
 def test():
-    result = run("mpiexec -np 2 python -c 'import dlp_mpi; print(dlp_mpi.RANK)'")
+    result = run("mpiexec --oversubscribe -np 2 python -c 'import dlp_mpi; print(dlp_mpi.RANK)'")
     assert result.stdout in ['0\n1\n', '1\n0\n'], f"Unexpected output: {result.stdout}"
 
 
@@ -31,7 +31,9 @@ def exec_code(code, size=2):
         tmpdir = Path(tmpdir)
         (tmpdir / 'code.py').write_text(code)
         try:
-            run(["mpiexec", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"], cwd=tmpdir)
+            # --oversubscribe: mpiexec fails, if the number of physical cores is less than SIZE.
+            #                  With this option it will run anyway.
+            run(["mpiexec", "--oversubscribe", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"], cwd=tmpdir)
         except subprocess.CalledProcessError as e:
             for rank in range(size):
                 try:
