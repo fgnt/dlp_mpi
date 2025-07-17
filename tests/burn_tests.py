@@ -56,14 +56,14 @@ def exec_code(code, size=2, backend='ame'):
         return out
 
 
-def test_1(backend, size=2):
+def mpi_1(backend, size=2):
     """
-    >>> test_1('mpi4py')
+    >>> mpi_1('mpi4py')
     rank=0, size=2
     <BLANKLINE>
     rank=1, size=2
     <BLANKLINE>
-    >>> test_1('ame')
+    >>> mpi_1('ame')
     rank=0, size=2
     <BLANKLINE>
     rank=1, size=2
@@ -73,27 +73,27 @@ def test_1(backend, size=2):
         print(output)
 
 
-def test_2(backend, size=2):
+def mpi_2(backend, size=2):
     """
-    >>> test_2('mpi4py')
+    >>> mpi_2('mpi4py')
     rank=0, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
     <BLANKLINE>
     rank=1, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
     <BLANKLINE>
-    >>> test_2('ame')
+    >>> mpi_2('ame')
     """
     for output in exec_code((examples_folder / 'mpi_2_broadcast_data.py').read_text(), size=size, backend=backend):
         print(output)
 
 
-def test_3(backend, size=2):
+def mpi_3(backend, size=2):
     """
-    >>> test_3('mpi4py')
+    >>> mpi_3('mpi4py')
     rank=0, size=2, data=['hello', 'world']
     <BLANKLINE>
     rank=1, size=2, data=None
     <BLANKLINE>
-    >>> test_3('ame')
+    >>> mpi_3('ame')
     rank=0, size=2, data=['hello', 'world']
     <BLANKLINE>
     rank=1, size=2, data=None
@@ -103,9 +103,9 @@ def test_3(backend, size=2):
         print(output)
 
 
-def test_4(backend, size=2):
+def mpi_4(backend, size=2):
     """
-    >>> test_4('mpi4py')
+    >>> mpi_4('mpi4py')
     rank=0, size=2, data=10
     rank=0, size=2, data=12
     job splits: [[20, 24], [22, 26]]
@@ -114,7 +114,7 @@ def test_4(backend, size=2):
     rank=1, size=2, data=11
     rank=1, size=2, data=13
     <BLANKLINE>
-    >>> test_4('ame')
+    >>> mpi_4('ame')
     rank=0, size=2, data=10
     rank=0, size=2, data=12
     job splits: [[20, 24], [22, 26]]
@@ -128,10 +128,10 @@ def test_4(backend, size=2):
         print(output)
 
 
-def test_5(backend, size=2):
+def mpi_5(backend, size=2):
     """
 
-    >>> test_5('mpi4py')
+    >>> mpi_5('mpi4py')
     ### Unordered map scattered around processes:
     ['h', 'e', 'l', 'l', 'o']
     ### Map function run only on master:
@@ -148,7 +148,7 @@ def test_5(backend, size=2):
     1 3 l
     1 4 o
     <BLANKLINE>
-    >>> test_5('ame')
+    >>> mpi_5('ame')
     ### Unordered map scattered around processes:
     ['h', 'e', 'l', 'l', 'o']
     ### Map function run only on master:
@@ -170,9 +170,10 @@ def test_5(backend, size=2):
         print(output)
 
 
-def test_5_3(backend, size=3):
+def mpi_5_3(backend, size=3):
     """
-    >>> test_5_3()
+    >>> mpi_5_3('mpi4py')
+    >>> mpi_5_3('ame')
     """
     outputs = exec_code((examples_folder / 'mpi_5_map_unordered.py').read_text(), size=size, backend=backend)
 
