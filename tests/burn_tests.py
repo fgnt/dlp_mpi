@@ -81,6 +81,10 @@ def mpi_2(backend, size=2):
     rank=1, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
     <BLANKLINE>
     >>> mpi_2('ame')
+    rank=0, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
+    <BLANKLINE>
+    rank=1, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
+    <BLANKLINE>
     """
     for output in exec_code((examples_folder / 'mpi_2_broadcast_data.py').read_text(), size=size, backend=backend):
         print(output)
