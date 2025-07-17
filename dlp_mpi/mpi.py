@@ -100,7 +100,7 @@ except ImportError:
     _backend == 'none'
 
 
-print(f'Using {_backend!r} as backend (DLP_MPI_BACKEND={os.environ.get("DLP_MPI_BACKEND", "")})')
+# print(f'Using {_backend!r} as backend (DLP_MPI_BACKEND={os.environ.get("DLP_MPI_BACKEND", "")})')
 
 
 if not _mpi_available:
