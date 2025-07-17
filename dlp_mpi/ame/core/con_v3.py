@@ -396,70 +396,53 @@ def authenticate_server_side(sock: socket.socket, authkey, version=_AUTH_VERSION
     Versions:
      - 1: Send authkey from client to server.
      - 2: Send a challenge from server to client. Client has to respond with a
-          hash of the challenge and the authkey.
+          hash of the (challenge concat authkey).
      - 3: Like 2, but additionally, the client has to send a challenge to the
           server. So the server knowns that the client has the correct authkey
           and the client knows that the server has the correct authkey.
 
-    >>> import threading
+    >>> import threading, concurrent.futures
     >>> # s1, s2 = _doctext_socket_pair()
-    >>> s1, s2 = socket.socketpair(socket.AF_UNIX)
-    >>> t = threading.Thread(target=authenticate_client_side, args=(s2, b'123', 1))
-    >>> t.start()
-    >>> authenticate_server_side(s1, b'123', 1)
-    True
-    >>> s1.close(), s2.close()
-    (None, None)
+    >>> def test(version):
+    ...     with concurrent.futures.ThreadPoolExecutor(1) as executor:
+    ...         s1, s2 = socket.socketpair(socket.AF_UNIX)
+    ...         future = executor.submit(authenticate_client_side, s2, b'123', version)
+    ...         print('Server', authenticate_server_side(s1, b'123', version))
+    ...         _ = s1.close(), s2.close()
+    ...         print('Client', future.result())
+    >>> test(version=1)
+    Server True
+    Client None
+    >>> test(version=2)
+    Server True
+    Client None
+    >>> test(version=3)
+    Server True
+    Client True
 
-    >>> import threading
-    >>> # s1, s2 = _doctext_socket_pair()
-    >>> s1, s2 = socket.socketpair(socket.AF_UNIX)
-    >>> t = threading.Thread(target=authenticate_client_side, args=(s2, b'123', 2))
-    >>> t.start()
-    >>> authenticate_server_side(s1, b'123', 2)
-    True
-    >>> s1.close(), s2.close()
-    (None, None)
-
-    >>> import threading
-    >>> # s1, s2 = _doctext_socket_pair()
-    >>> s1, s2 = socket.socketpair(socket.AF_UNIX)
-    >>> t = threading.Thread(target=authenticate_client_side, args=(s2, b'123', 3))
-    >>> t.start()
-    >>> authenticate_server_side(s1, b'123', 3)
-    True
-    >>> s1.close(), s2.close()
-    (None, None)
-
-    >>> # s1, s2 = _doctext_socket_pair()
-    >>> s1, s2 = socket.socketpair(socket.AF_UNIX)
-    >>> t = threading.Thread(target=authenticate_client_side, args=(s2, b'323', 1))
-    >>> t.start()
-    >>> authenticate_server_side(s1, b'123', 1)  # doctest: +ELLIPSIS
+    >>> def test(version):
+    ...     with concurrent.futures.ThreadPoolExecutor(1) as executor:
+    ...         s1, s2 = socket.socketpair(socket.AF_UNIX)
+    ...         future = executor.submit(authenticate_client_side, s2, b'323', version)
+    ...         print('Server', authenticate_server_side(s1, b'123', version))
+    ...         _ = s1.close(), s2.close()
+    ...         try:
+    ...             print('Client', future.result())
+    ...         except Exception as e:
+    ...             print('Client', e)
+    >>> test(version=1)
+    Authkey mismatch for hostname '': b'123' != b'323'
+    Server False
+    Client None
+    >>> test(version=2)  # doctest: +ELLIPSIS
     Authkey mismatch for hostname '': b... != b...
-    False
-    >>> s1.close(), s2.close()
-    (None, None)
-
-    >>> # s1, s2 = _doctext_socket_pair()
-    >>> s1, s2 = socket.socketpair(socket.AF_UNIX)
-    >>> t = threading.Thread(target=authenticate_client_side, args=(s2, b'323', 2))
-    >>> t.start()
-    >>> authenticate_server_side(s1, b'123', 2)  # doctest: +ELLIPSIS
+    Server False
+    Client None
+    >>> test(version=3)  # doctest: +ELLIPSIS
     Authkey mismatch for hostname '': b... != b...
-    False
-    >>> s1.close(), s2.close()
-    (None, None)
+    Server False
+    Client [Errno ...] ...
 
-    >>> # s1, s2 = _doctext_socket_pair()
-    >>> s1, s2 = socket.socketpair(socket.AF_UNIX)
-    >>> t = threading.Thread(target=authenticate_client_side, args=(s2, b'323', 3))
-    >>> t.start()
-    >>> authenticate_server_side(s1, b'123', 3)  # doctest: +ELLIPSIS
-    Authkey mismatch for hostname '': b... != b...
-    False
-    >>> s1.close(), s2.close()
-    (None, None)
     """
     if version == 1:
         outer_authkey = Mixin.recv_nbytes(sock, len(authkey))
@@ -478,8 +461,8 @@ def authenticate_server_side(sock: socket.socket, authkey, version=_AUTH_VERSION
         return True
     elif version == 3:
         c = Challenge(authkey, sock)
-        if c.challenger():
-            c.challenged()
+        if c.send_recv_check():
+            c.recv_process_send()
             return True
         return False
     else:
@@ -495,8 +478,8 @@ def authenticate_client_side(sock, authkey, version=_AUTH_VERSION):
         sock.sendall(response)
     elif version == 3:
         c = Challenge(authkey, sock)
-        c.challenged()
-        if c.challenger():
+        c.recv_process_send()
+        if c.send_recv_check():
             return True
         return False
     else:
@@ -508,7 +491,7 @@ class Challenge:
         self.authkey = authkey
         self.sock = sock
 
-    def challenger(self):
+    def send_recv_check(self):
         challenge = os.urandom(16)
         response = hashlib.sha256(challenge + self.authkey).digest()
 
@@ -519,7 +502,7 @@ class Challenge:
             return False
         return True
 
-    def challenged(self):
+    def recv_process_send(self):
         challenge = Mixin.recv_nbytes(self.sock, 16)
         response = hashlib.sha256(challenge + self.authkey).digest()
         self.sock.sendall(response)
