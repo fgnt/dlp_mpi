@@ -40,7 +40,7 @@ jobs:
         python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        DLP_MPI_BACKEND=${{ matrix.python-version }} python -m pytest
+        DLP_MPI_BACKEND=${{ matrix.dpl_mpi_backend }} python -m pytest
     - name: Codecov
       run: |
         codecov
