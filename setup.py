@@ -8,11 +8,6 @@ https://github.com/pypa/sampleproject
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
-# io.open is needed for projects that support Python 2.7
-# It ensures open() defaults to text mode with universal newlines,
-# and accepts an argument to specify the text encoding
-# Python 3 only projects can skip this import
-from io import open
 
 here = path.abspath(path.dirname(__file__))
 
@@ -22,6 +17,25 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
+
+extras_require = {}
+extras_require['optional'] = [
+    'tqdm',  # when a progress bar is enabled/used
+    'paderbox',  # dlp_mpi.collection.NestedDict
+]
+extras_require['mpi4py'] = ['mpi4py']
+extras_require['pmix'] = ['cffi']
+extras_require['test'] = [
+    *extras_require['optional'], *extras_require['mpi4py'], *extras_require['pmix'], 
+    'pytest',
+    'pytest-cov',
+    'numpy',
+    'flake8'
+]
+extras_require['all'] = list(dict.fromkeys([
+    e for k, v in extras_require.items() if k != 'all' for e in v
+]).keys())
+
 
 setup(
     # This is the name of your project. The first time you publish this
@@ -48,7 +62,7 @@ setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Data-level parallelism with mpi in python',  # Optional
+    description='Data-level parallelism with MPI in python',  # Optional
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -94,7 +108,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
@@ -107,8 +121,12 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
     ],
 
     # This field adds keywords for your project which will appear on the
@@ -133,7 +151,7 @@ setup(
     # and refuse to install the project if the version does not match. If you
     # do not support Python 2, you can simplify this to '>=3.5' or similar, see
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires='>=3.6, <4',
+    python_requires='>=3.8, <4',
 
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
@@ -142,7 +160,7 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'mpi4py'
+        # 'mpi4py'
         # 'peppercorn'
     ],  # Optional
 
@@ -154,10 +172,7 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    extras_require={  # Optional
-        # 'dev': ['check-manifest'],
-        # 'test': ['coverage'],
-    },
+    extras_require=extras_require,
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
@@ -185,9 +200,10 @@ setup(
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
-        # 'console_scripts': [
-        #     'sample=sample:main',
-        # ],
+        'console_scripts': [
+            'amerun=dlp_mpi.ame.mpirun.__main__:launch',
+            'ameexec=dlp_mpi.ame.mpirun.__main__:launch',
+        ],
     },
 
     # List additional URLs that are relevant to your project as a dict.

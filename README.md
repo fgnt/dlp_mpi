@@ -150,7 +150,7 @@ To start the processes `mpiexec` can be used. Most HPC systems support MPI to sc
 
 Since each process should operate on different examples, MPI provides the variables `RANK` and `SIZE`, where `SIZE` is the number of workers and `RANK` is a unique identifier from `0` to `SIZE - 1`.
 The easiest way to improve the execution time is to process `examples[RANK::SIZE]` on each worker.
-This is a round robin load balancing (`dlp_mpi.split_round_robin`).
+This is a round-robin load balancing (`dlp_mpi.split_round_robin`).
 A more advanced load balancing is `dlp_mpi.split_managed`, where one process manages the load and assigns a new task to a worker once he finishes the last task.
 
 When in the end of a program all results should be summarized or written in a single file, communication between all processes is nessesary.
@@ -162,7 +162,7 @@ The communication between the processes is only the `result` and the index to ge
 
 # Availabel utilities and functions
 
-Note: `dlp_mpi` has dummy implementations, when `mpi4py` is not installed and the enviroment indicate that no MPI is used (Useful for running on a laptop).
+Note: `dlp_mpi` has dummy implementations, when `mpi4py` is not installed and the environment indicates that no MPI is used (Useful for running on a laptop).
 
  - `dlp_mpi.RANK` or `mpi4py.MPI.COMM_WORLD.rank`: The rank of the process. To avoid programming errors, `if dlp_mpi.RANK: ...` will fail.
  - `dlp_mpi.SIZE` or `mpi4py.MPI.COMM_WORLD.size`: The number of processes.
@@ -173,36 +173,36 @@ Note: `dlp_mpi` has dummy implementations, when `mpi4py` is not installed and th
 
 The advanced functions that are provided in this package are
 
- - `split_round_robin(examples)`: Zero communication split of the data. The default is identically to `examples[dlp_mpi.RANK::dlp_mpi.SIZE]`.
- - `split_managed(examples)`: The master process manages the load balance, while the others do the work. Note: The master process does not distribute the examples. It is assumed that examples have the same order on each worker.
- - `map_unordered(work_load, examples)`: The master process manages the load balance, while the others execute the `work_load` function. The result is send back to the master process.
+ - `split_round_robin(examples)`: Zero communication split of the data. The default is identical to `examples[dlp_mpi.RANK::dlp_mpi.SIZE]`.
+ - `split_managed(examples)`: The master process manages the load balance while the others do the work. Note: The master process does not distribute the examples. It is assumed that examples have the same order on each worker.
+ - `map_unordered(work_load, examples)`: The master process manages the load balance, while the others execute the `work_load` function. The result is sent back to the master process.
 
 
 # Runtime
 
-Without this package your code runs in serial.
+Without this package, your code runs in serial.
 The execution time of the following code snippets will be demonstrated by running it with this package.
 Regarding the color: The `examples = ...` is the setup code.
-Therefore, the code and the correspoding block representing the execution time it is blue in the code.
+Therefore, the code and the corresponding block representing the execution time it is blue in the code.
 
 ![(Serial Worker)](doc/tikz_split_managed_serial.svg)
 
-This easiest way to parallelize the workload (dark orange) is to do a round robin assignment of the load:
+This easiest way to parallelize the workload (dark orange) is to do a round-robin assignment of the load:
 `for example in dlp_mpi.split_round_robin(examples)`.
 This function call is equivalent to `for example in examples[dlp_mpi.RANK::dlp_mpi.SIZE]`.
 Thus, there is zero comunications between the workers.
-Only when it is nessesary to do some final work on the results of all data (e.g. calculating average metrics) a communication is nessesary.
+Only when it is nessesary to do some final work on the results of all data (e.g. calculating average metrics) a communication is necessary.
 This is done with the `gather` function.
-This functions returns the worker results in a list on the master process and the worker process gets a `None` return value.
-Depending on the workload the round robin assingment can be suboptimal.
-See the example block diagramm.
-Worker 1 got tasks that are relative long.
+This function returns the worker results in a list on the master process and the worker process gets a `None` return value.
+Depending on the workload the round-robin assingment can be suboptimal.
+See the example block diagram.
+Worker 1 got tasks that are relatively long.
 So this worker used much more time than the others.
 
 ![(Round Robin)](doc/tikz_split_managed_rr.svg)
 
 To overcome the limitations of the round robin assignment, this package helps to use a manager to assign the work to the workers.
-This optimizes the utilisation of the workers.
+This optimizes the utilization of the workers.
 Once a worker finished an example, it requests a new one from the manager and gets one assigned.
 Note: The communication is only which example should be processed (i.e. the index of the example) not the example itself.
 
@@ -211,9 +211,9 @@ Note: The communication is only which example should be processed (i.e. the inde
 An alternative to splitting the iterator is to use a `map` function.
 The function is then executed on a worker and the return value is sent back to the manager.
 Be carefull, that the loop body is fast enough, otherwise it can be a bottleneck.
-You should use the loop body only for book keeping, not for actual work load.
+You should use the loop body only for book keeping, not for actual workload.
 When a worker sends a task to the manager, the manager sends back a new task and enters the for loop body. 
-While the manager is in the loop body, he cannot react on requests of other workers, see the block diagramm:
+While the manager is in the loop body, he cannot react on requests of other workers, see the block diagram:
 
 ![(Managed Map)](doc/tikz_split_managed_map.svg)
 
@@ -222,8 +222,12 @@ While the manager is in the loop body, he cannot react on requests of other work
 
 You can install this package from pypi:
 ```bash
+pip install mpi4py
 pip install dlp_mpi
 ```
+where `mpi4py` is a backend for this package.
+You can skip the installation of `mpi4py` when you
+want to use the internal backend, it is called `ame`.
 
 To check if the installation was successful, try the following command:
 ```bash 
@@ -237,12 +241,29 @@ The command should print the numbers 0, 1, 2 and 3.
 The order is random.
 When that line prints 4 times a zero, something went wrong.
 
-This can happen, when you have no `mpi` installed or the installation is brocken.
+This can happen, when you have no `mpi` installed or the installation is broken.
 In a Debian-based Linux you can install it with `sudo apt install libopenmpi-dev`.
 When you do not have the rights to install something with `apt`, you could also install `mpi4py` with `conda`.
 The above `pip install` will install `mpi4py` from `pypi`.
 Be careful, that the installation from `conda` may conflict with your locally installed `mpi`. 
 Especially in High Performance Computing (HPC) environments this can cause troubles.
+
+# AME Backend
+
+The `ame` backend can be activated by setting the environment variable `DLP_MPI_BACKEND` to `ame`.
+It implements the interface of `mpi4py` that is used by `dlp_mpi`.
+
+It has the following properties:
+
+ - Pure python implementation with sockets:
+   - No issues with binaries: The actual motivation for `ame`
+   - Most likely slower than `mpi4py`: `MPI` has many optimizations that are not implemented in `ame`
+ - Communication only between root and workers, i.e. no communication between workers. So you cannot change the root in any function of `dlp_mpi`. But it is also unlikely that you need this feature. At least, I never needed it.
+ - Assumes a trusted environment: The communication is not encrypted. So do not use it in an untrusted environment.
+ - Supported launchers (mpiexec and srun):
+   - mpiexec build with PMI (uses PMI to setup the environment)
+   - mpiexec build with PMIx (use file based setup)
+   - slurm/srun with PMIx (use file based setup)
 
 # FAQ
 

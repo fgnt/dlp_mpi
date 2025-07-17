@@ -12,7 +12,7 @@ import numpy as np
 
 
 def fn(example_id):
-    time.sleep(np.random.uniform(0, 1))
+    time.sleep(np.random.uniform(0, 0.2))
     example = 'hello'
     print(RANK, example_id, example[example_id])
     return example[example_id]
