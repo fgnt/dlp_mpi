@@ -30,7 +30,16 @@ def exec_code(code, size=2):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         (tmpdir / 'code.py').write_text(code)
-        run(["mpiexec", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"], cwd=tmpdir)
+        try:
+            run(["mpiexec", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"], cwd=tmpdir)
+        except subprocess.CalledProcessError as e:
+            for rank in range(size):
+                try:
+                    e.add_note(f'\nOutput from rank {rank}:\n' + (tmpdir / f"{rank}.txt").read_text() + '\n')
+                except FileNotFoundError:
+                    e.add_note(f"\nOutput file for rank {rank} not found.\n")
+            raise
+
         assert set(tmpdir.glob("*.txt")) == {tmpdir / f"{rank}.txt" for rank in range(size)}, f"Expected {size} output files, found: {list(tmpdir.glob('*.txt'))}"
         out = []
         for rank in range(size):
