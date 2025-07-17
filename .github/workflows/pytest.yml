@@ -39,6 +39,9 @@ jobs:
         python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        trap 'echo -e "$ $BASH_COMMAND"' DEBUG
+        export OMP_NUM_THREADS=1
+        export MKL_NUM_THREADS=1
         python -m pytest
     - name: Codecov
       run: |
