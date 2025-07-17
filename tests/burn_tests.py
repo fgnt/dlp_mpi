@@ -2,14 +2,18 @@ import subprocess
 from pathlib import Path
 import tempfile
 import shlex
+import pytest
+import os
+
 
 examples_folder = Path(__file__).parent.parent / 'examples'
 
 
-def run(cmd, cwd=None, check=True):
+def run(cmd, cwd=None, check=True, **kwargs):
     """Run a command in a subprocess."""
     try:
-        return subprocess.run(cmd, shell=isinstance(cmd, str), check=check, capture_output=True, text=True, cwd=cwd, universal_newlines=True)
+        return subprocess.run(cmd, shell=isinstance(cmd, str), check=check, capture_output=True, text=True, cwd=cwd, universal_newlines=True,
+                              **kwargs)
     except subprocess.CalledProcessError as e:
         e.add_note(f'\n\nstdout: {e.stdout}\nstderr: {e.stderr}')
         raise
@@ -20,20 +24,23 @@ def test():
     assert result.stdout in ['0\n1\n', '1\n0\n'], f"Unexpected output: {result.stdout}"
 
 
-def exec_code(code, size=2):
+def exec_code(code, size=2, backend='ame'):
     """
     Execute code with mpiexec -np <size> ....
 
     Catch the stdout of each rank and return it, ordered by RANK.
 
     """
+    env = os.environ.copy()
+    env['DLP_MPI_BACKEND'] = backend
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         (tmpdir / 'code.py').write_text(code)
         try:
             # --oversubscribe: mpiexec fails, if the number of physical cores is less than SIZE.
             #                  With this option it will run anyway.
-            run(["mpiexec", "--oversubscribe", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"], cwd=tmpdir)
+            run(["mpiexec", "--oversubscribe", "-np", f"{size}", "bash", "-c", f"python {tmpdir / 'code.py'} > {tmpdir / '$OMPI_COMM_WORLD_RANK.txt'}"],
+                cwd=tmpdir, env=env)
         except subprocess.CalledProcessError as e:
             for rank in range(size):
                 try:
@@ -49,45 +56,65 @@ def exec_code(code, size=2):
         return out
 
 
-def test_1(size=2):
+def test_1(backend, size=2):
     """
-    >>> test_1()
+    >>> test_1('mpi4py')
+    rank=0, size=2
+    <BLANKLINE>
+    rank=1, size=2
+    <BLANKLINE>
+    >>> test_1('ame')
     rank=0, size=2
     <BLANKLINE>
     rank=1, size=2
     <BLANKLINE>
     """
-    for output in exec_code((examples_folder / 'mpi_1_rank_and_size.py').read_text(), size=size):
+    for output in exec_code((examples_folder / 'mpi_1_rank_and_size.py').read_text(), size=size, backend=backend):
         print(output)
 
 
-def test_2(size=2):
+def test_2(backend, size=2):
     """
-    >>> test_2()
+    >>> test_2('mpi4py')
     rank=0, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
     <BLANKLINE>
     rank=1, size=2, data={'key1': [7, 2.72, (2+3j)], 'key2': ('abc', 'xyz')}
     <BLANKLINE>
+    >>> test_2('ame')
     """
-    for output in exec_code((examples_folder / 'mpi_2_broadcast_data.py').read_text(), size=size):
+    for output in exec_code((examples_folder / 'mpi_2_broadcast_data.py').read_text(), size=size, backend=backend):
         print(output)
 
 
-def test_3(size=2):
+def test_3(backend, size=2):
     """
-    >>> test_3()
+    >>> test_3('mpi4py')
+    rank=0, size=2, data=['hello', 'world']
+    <BLANKLINE>
+    rank=1, size=2, data=None
+    <BLANKLINE>
+    >>> test_3('ame')
     rank=0, size=2, data=['hello', 'world']
     <BLANKLINE>
     rank=1, size=2, data=None
     <BLANKLINE>
     """
-    for output in exec_code((examples_folder / 'mpi_3_gather_data.py').read_text(), size=size):
+    for output in exec_code((examples_folder / 'mpi_3_gather_data.py').read_text(), size=size, backend=backend):
         print(output)
 
 
-def test_4(size=2):
+def test_4(backend, size=2):
     """
-    >>> test_4()
+    >>> test_4('mpi4py')
+    rank=0, size=2, data=10
+    rank=0, size=2, data=12
+    job splits: [[20, 24], [22, 26]]
+    flat result:  [20, 24, 22, 26]
+    <BLANKLINE>
+    rank=1, size=2, data=11
+    rank=1, size=2, data=13
+    <BLANKLINE>
+    >>> test_4('ame')
     rank=0, size=2, data=10
     rank=0, size=2, data=12
     job splits: [[20, 24], [22, 26]]
@@ -97,14 +124,31 @@ def test_4(size=2):
     rank=1, size=2, data=13
     <BLANKLINE>
     """
-    for output in exec_code((examples_folder / 'mpi_4_scatter_gather.py').read_text(), size=size):
+    for output in exec_code((examples_folder / 'mpi_4_scatter_gather.py').read_text(), size=size, backend=backend):
         print(output)
 
 
-def test_5(size=2):
+def test_5(backend, size=2):
     """
 
-    >>> test_5()
+    >>> test_5('mpi4py')
+    ### Unordered map scattered around processes:
+    ['h', 'e', 'l', 'l', 'o']
+    ### Map function run only on master:
+    0 0 h
+    0 1 e
+    0 2 l
+    0 3 l
+    0 4 o
+    ['h', 'e', 'l', 'l', 'o']
+    <BLANKLINE>
+    1 0 h
+    1 1 e
+    1 2 l
+    1 3 l
+    1 4 o
+    <BLANKLINE>
+    >>> test_5('ame')
     ### Unordered map scattered around processes:
     ['h', 'e', 'l', 'l', 'o']
     ### Map function run only on master:
@@ -122,15 +166,15 @@ def test_5(size=2):
     1 4 o
     <BLANKLINE>
     """
-    for output in exec_code((examples_folder / 'mpi_5_map_unordered.py').read_text(), size=size):
+    for output in exec_code((examples_folder / 'mpi_5_map_unordered.py').read_text(), size=size, backend=backend):
         print(output)
 
 
-def test_5_3(size=3):
+def test_5_3(backend, size=3):
     """
     >>> test_5_3()
     """
-    outputs = exec_code((examples_folder / 'mpi_5_map_unordered.py').read_text(), size=size)
+    outputs = exec_code((examples_folder / 'mpi_5_map_unordered.py').read_text(), size=size, backend=backend)
 
     for expected in [
             ' 0 h\n',
