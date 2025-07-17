@@ -44,10 +44,10 @@ try:
 
     if _backend == 'ame':
         from dlp_mpi.ame import MPI
-    elif _backend in ['mpi4py', '']:
-        from mpi4py import MPI
     elif _backend == '' and 'AME_RANK' in os.environ:
         from dlp_mpi.ame import MPI
+    elif _backend in ['mpi4py', '']:
+        from mpi4py import MPI
     elif _backend == 'none':
         raise ImportError("No backend selected. If you see this, you started a job with MPI, while DLP_MPI_BACKEND=none.")
     else:

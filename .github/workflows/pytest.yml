@@ -15,7 +15,7 @@ jobs:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os: [ ubuntu-latest ]
-        dpl_mpi_backend: ['ame', 'mpi4py']
+        dlp_mpi_backend: ['ame', 'mpi4py']
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -40,7 +40,8 @@ jobs:
         python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        DLP_MPI_BACKEND=${{ matrix.dpl_mpi_backend }} python -m pytest
+        export DLP_MPI_BACKEND=${{ matrix.dlp_mpi_backend }}
+        python -m pytest
     - name: Codecov
       run: |
         codecov
