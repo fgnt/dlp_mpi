@@ -408,8 +408,12 @@ def authenticate_server_side(sock: socket.socket, authkey, version=_AUTH_VERSION
     ...         s1, s2 = socket.socketpair(socket.AF_UNIX)
     ...         future = executor.submit(authenticate_client_side, s2, b'123', version)
     ...         print('Server', authenticate_server_side(s1, b'123', version))
+    ...         time.sleep(0.01)  # Give the client some time to recv the last msg.
     ...         _ = s1.close(), s2.close()
-    ...         print('Client', future.result())
+    ...         try:
+    ...             print('Client', future.result())
+    ...         except Exception as e:
+    ...             print('Client', e)
     >>> test(version=1)
     Server True
     Client None
@@ -425,6 +429,7 @@ def authenticate_server_side(sock: socket.socket, authkey, version=_AUTH_VERSION
     ...         s1, s2 = socket.socketpair(socket.AF_UNIX)
     ...         future = executor.submit(authenticate_client_side, s2, b'323', version)
     ...         print('Server', authenticate_server_side(s1, b'123', version))
+    ...         time.sleep(0.01)  # Give the client some time to recv the last msg.
     ...         _ = s1.close(), s2.close()
     ...         try:
     ...             print('Client', future.result())
