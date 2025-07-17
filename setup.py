@@ -19,13 +19,16 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 extras_require = {}
+extras_require['optional'] = [
+    'tqdm',  # when a progress bar is enabled/used
+    'paderbox',  # dlp_mpi.collection.NestedDict
+]
 extras_require['mpi4py'] = ['mpi4py']
 extras_require['pmix'] = ['cffi']
 extras_require['test'] = [
-    *extras_require['mpi4py'], *extras_require['pmix'], 
+    *extras_require['optional'], *extras_require['mpi4py'], *extras_require['pmix'], 
     'pytest',
     'numpy',
-    'paderbox',  # dlp_mpi.collection.NestedDict
 ]
 extras_require['all'] = list(dict.fromkeys([
     e for k, v in extras_require.items() if k != 'all' for e in v
