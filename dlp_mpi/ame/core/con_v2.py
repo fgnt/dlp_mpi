@@ -7,7 +7,16 @@ import types
 import asyncio
 import time
 
-from paderbox.utils.mapping import Dispatcher
+try:
+    from paderbox.utils.mapping import Dispatcher  # better error message
+except ImportError:
+    class Dispatcher(dict):
+        def __getitem__(self, key):
+            try:
+                return super().__getitem__(key)
+            except KeyError:
+                raise KeyError(f'{key!r}. Available keys: {list(self.keys())}')
+
 
 from ..constants import *
 from .logger import info

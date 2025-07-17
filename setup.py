@@ -23,6 +23,15 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
+extras_require = {}
+extras_require['mpi4py'] = ['mpi4py']
+extras_require['pmix'] = ['cffi']
+extras_require['test'] = [*extras_require['mpi4py'], *extras_require['pmix'], 'pytest', 'numpy']
+extras_require['all'] = list(dict.fromkeys([
+    e for k, v in extras_require.items() if k != 'all' for e in v
+]).keys())
+
+
 setup(
     # This is the name of your project. The first time you publish this
     # package, this name will be registered for you. It will determine how
@@ -154,12 +163,7 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    extras_require={  # Optional
-        'mpi4py': ['mpi4py'],
-        'all': ['mpi4py'],
-        # 'dev': ['check-manifest'],
-        # 'test': ['coverage'],
-    },
+    extras_require=extras_require,
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
