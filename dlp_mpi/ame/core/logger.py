@@ -1,19 +1,25 @@
+import sys
 import inspect
 from pathlib import Path
 
 
 def info(*args, color=True, frames=1):
     """
+
+    >>> if sys.version_info < (3, 11):  # co_qualname was added in Python 3.11
+    ...     import pytest
+    ...     pytest.skip('Requires Python 3.11 or newer') 
+
     >>> foo()  # doctest: +ELLIPSIS
-    logger.py:68 foo: debug message
+    logger.py:77 foo: debug message
     >>> Bar()()  # doctest: +ELLIPSIS
-    logger.py:73 Bar.__call__: debug message
+    logger.py:82 Bar.__call__: debug message
     >>> Bar().method_exception()  # doctest: +ELLIPSIS
-    logger.py:79 Bar.method_exception: debug message
+    logger.py:88 Bar.method_exception: debug message
     >>> Bar.static_method()  # doctest: +ELLIPSIS
-    logger.py:83 Bar.static_method: debug message
+    logger.py:92 Bar.static_method: debug message
     >>> Bar.class_method()  # doctest: +ELLIPSIS
-    logger.py:87 Bar.class_method: debug message
+    logger.py:96 Bar.class_method: debug message
     """
     class c:
         red = '\033[91m'
