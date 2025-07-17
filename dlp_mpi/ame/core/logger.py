@@ -36,13 +36,17 @@ def info(*args, color=True, frames=1):
             outer_frame = outer_frame.f_back
         outer_frame_info = inspect.getframeinfo(outer_frame)
         try:
+            # added in py311 https://docs.python.org/3/whatsnew/changelog.html#changelog
             qualname = outer_frame.f_code.co_qualname
         except AttributeError:
-            # ToDO: Find a the reason and a proper fix for:
-            # AttributeError: 'code' object has no attribute 'co_qualname'. Did you mean: 'co_filename'?
-            qualname = '???'
-            # qualname = str(outer_frame.f_code)
-            # <code object recv at 0x..., file ".../dlp_mpi/dlp_mpi/ame/core/con_v3.py", line 207>
+            try:
+                qualname = outer_frame.f_code.co_name
+            except AttributeError:
+                # ToDO: Find a the reason and a proper fix for:
+                # AttributeError: 'code' object has no attribute 'co_qualname'. Did you mean: 'co_filename'?
+                qualname = '???'
+                # qualname = str(outer_frame.f_code)
+                # <code object recv at 0x..., file ".../dlp_mpi/dlp_mpi/ame/core/con_v3.py", line 207>
 
         file = Path(outer_frame_info.filename).name
         file_color = {
