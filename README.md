@@ -250,7 +250,12 @@ Especially in High Performance Computing (HPC) environments this can cause troub
 
 # AME Backend
 
-The `ame` backend can be activated by setting the environment variable `DLP_MPI_BACKEND` to `ame`.
+The `ame` backend can be activated by setting the environment variable `DLP_MPI_BACKEND` to `ame`:
+
+```bash
+export DLP_MPI_BACKEND=ame
+```
+
 It implements the interface of `mpi4py` that is used by `dlp_mpi`.
 
 It has the following properties:
