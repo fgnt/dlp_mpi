@@ -70,7 +70,7 @@ def get_host_rank_size():
         # 
         # Always the same as SLURM_STEP_LAUNCHER_PORT ?
         # 
-        # ToDO: Find something better that 'SLURM_SRUN_COMM_PORT'.
+        # ToDO: Find something better than 'SLURM_SRUN_COMM_PORT'.
         # It is not guaranteed, that the PORT is free, only very likely.
         # 
         # It is not clear, whether the port is free to be used.
