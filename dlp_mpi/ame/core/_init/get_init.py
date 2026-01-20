@@ -34,7 +34,7 @@ def _get(type_, debug=DEBUG):
 
     if type_ is None:
         type_ = []
-        # ToDO: Add somethink like AME_SHARED_DIR:
+        # ToDO: Add something like AME_SHARED_DIR:
         #  - Used to share the port (and maybe authkey) between the processes.
         #  - Can be used by OpenMPI (alternative to OMPI_MCA_orte_top_session_dir) and SLURM (for cases where SLURM_STEP_RESV_PORTS is not defined).
         if 'AME_RANK' in os.environ:
