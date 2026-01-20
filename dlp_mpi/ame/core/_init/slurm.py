@@ -58,11 +58,11 @@ def get_host_rank_size():
         _PORT = int(os.environ['SLURM_STEP_RESV_PORTS'].split('-')[0])
     elif 'SLURM_JOB_ID' in os.environ:
         # Fallback: If SLURM_STEP_RESV_PORTS is not defined,
-        # select a port from the range 60001-63000, based on the job ID
+        # select a port from the range 63001-66000, based on the job ID
         # Using modulo should make it very unlikely,
         # that two jobs get the same port.
         job_id = int(os.environ['SLURM_JOB_ID'])
-        PORT_BASE, PORT_SPAN = 60001, 3000
+        PORT_BASE, PORT_SPAN = 63001, 3000
         _PORT = PORT_BASE + (job_id % PORT_SPAN)
 
     elif 'SLURM_SRUN_COMM_PORT' in os.environ:
