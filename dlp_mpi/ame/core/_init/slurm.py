@@ -85,7 +85,8 @@ def get_host_rank_size():
         _PORT = int(os.environ['SLURM_SRUN_COMM_PORT'])
     else:
         raise RuntimeError(
-            f"Cannot find SLURM_STEP_RESV_PORTS and SLURM_SRUN_COMM_PORT in the environ."
+            "Cannot find SLURM_STEP_RESV_PORTS, SLURM_JOB_ID or SLURM_SRUN_COMM_PORT "
+            "in the environ."
         )
 
     ###########################################################################
