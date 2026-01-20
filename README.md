@@ -227,26 +227,47 @@ pip install dlp_mpi
 ```
 where `mpi4py` is a backend for this package.
 You can skip the installation of `mpi4py` when you
-want to use the internal backend, it is called `ame`.
+want to use the internal backend, it is called `ame`
+and is part of this package (`dlp_mpi.ame`).
 
 To check if the installation was successful, try the following command:
 ```bash 
-$ mpiexec -np 4 python -c 'import dlp_mpi; print(dlp_mpi.RANK)'
-3
-0
-1
-2
+$ ameexec -np 4 python -m dlp_mpi  # mpiexec -np 4 python -m dlp_mpi
+MPI backend: dlp_mpi.ame.MPI
+dlp_mpi.ame init info from the root process:
+  Using AME for getting host, port, rank, size:
+    Host: sa, Port: 51297
+    Rank: 0, Size: 4
+  Available methods:
+    AME: dlp_mpi.ame.core._init.get_init.get_ame_host_rank_size
+    None: dlp_mpi.ame.core._init.get_init.get_fallback_host_rank_size
+Hello from rank 3 of 4!
+Hello from rank 1 of 4!
+Hello from rank 2 of 4!
+Hello from rank 0 of 4!
 ```
-The command should print the numbers 0, 1, 2 and 3.
+The command should print four times `Hello from rank X of 4!` where X is 0, 1, 2 and 3.
 The order is random.
+When it prints 4 times `Hello from rank 0 of 1!`, something went wrong.
 When that line prints 4 times a zero, something went wrong.
+You can try different launchers
+ - `ameexec -np 4 python -m dlp_mpi`  # Simple launcher, that supports a subset of mpiexec
+ - `mpiexec -np 4 python -m dlp_mpi`  # Supports multi-node execution
+ - `srun -N 1 -n 1 -c 10 -p cpu --gpus 1 srun python -m dlp_mpi`  # recommended in HPC systems. Probably you have to adapt the arguments to the SLURM installation.
+and you can switch between backends, via environment variables
+ - `export DLP_MPI_BACKEND=ame`
+ - `export DLP_MPI_BACKEND=mpi4py`
 
-This can happen, when you have no `mpi` installed or the installation is broken.
+If you installed mpi4py, it sometimes happens, that the used mpi doesn't
+match the compiletime mpi version of mpi4py, e.g., it was missing.
 In a Debian-based Linux you can install it with `sudo apt install libopenmpi-dev`.
 When you do not have the rights to install something with `apt`, you could also install `mpi4py` with `conda`.
 The above `pip install` will install `mpi4py` from `pypi`.
 Be careful, that the installation from `conda` may conflict with your locally installed `mpi`. 
 Especially in High Performance Computing (HPC) environments this can cause troubles.
+
+What should be used?
+ - CB: I stopped using mpi4py and use ame either with mpiexec (or ameexec, if mpiexec is not installed) or slurm. For me it just works.
 
 # AME Backend
 
@@ -263,8 +284,8 @@ It has the following properties:
  - Pure python implementation with sockets:
    - No issues with binaries: The actual motivation for `ame`
    - Most likely slower than `mpi4py`: `MPI` has many optimizations that are not implemented in `ame`
- - Communication only between root and workers, i.e. no communication between workers. So you cannot change the root in any function of `dlp_mpi`. But it is also unlikely that you need this feature. At least, I never needed it.
- - Assumes a trusted environment: The communication is not encrypted. So do not use it in an untrusted environment.
+ - Communication only between root and workers, i.e., no communication between workers. So you cannot change the root in any function of `dlp_mpi`. But it is also unlikely that you need this feature. At least, I never needed it.
+ - Assumes a trusted environment: The communication is not encrypted. So do not use it in an untrusted environment (Maybe the same as in mpi?).
  - Supported launchers (mpiexec and srun):
    - mpiexec build with PMI (uses PMI to setup the environment)
    - mpiexec build with PMIx (use file based setup)
