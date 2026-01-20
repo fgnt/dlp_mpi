@@ -75,7 +75,7 @@ def ensure_single_thread_numeric():
 def maybe_warn_if_slurm():
     SLURM_NTASKS = int(os.environ.get('SLURM_NTASKS', 1))
     if SLURM_NTASKS > 1:
-        from mpi4py import MPI
+        from dlp_mpi.mpi import MPI
         SIZE = MPI.COMM_WORLD.size
         if SIZE == 1:
             import warnings

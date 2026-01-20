@@ -36,7 +36,8 @@ def get_host_rank_size():
     # Is it correct, that the first node is the one where the rank 0 is running?
     _HOST = expand_node_list(os.environ['SLURM_STEP_NODELIST'])[0]
 
-    # SLURM_SRUN_COMM_HOST is the IP of the submit node in salloc, hence I got OSError: [Errno 99] Cannot assign requested address
+    # SLURM_SRUN_COMM_HOST is the IP of the submit node in salloc,
+    # hence I got OSError: [Errno 99] Cannot assign requested address
     # _HOST = os.environ['SLURM_SRUN_COMM_HOST']
 
     # maybe not always defined
@@ -49,16 +50,44 @@ def get_host_rank_size():
     ###########################################################################
     # PORT
     ###########################################################################
-    # It is not clear, whether the port is free to be used.
-    # Given the fact, that SLURM_SRUN_COMM_HOST is the IP of the submit node in
-    # salloc, it is probably not planned to be used outside of slum plugins.
-    # _PORT = int(os.environ['SLURM_SRUN_COMM_PORT'])
+    if 'SLURM_STEP_RESV_PORTS' in os.environ:
+        # I cannot find a proper documentation for SLURM_STEP_RESV_PORTS.
+        # But https://supercloud.mit.edu/tensorboard indicates that it can be used
+        # for user code. So I will use it.
+        # SLURM_STEP_RESV_PORTS=17058-17059
+        _PORT = int(os.environ['SLURM_STEP_RESV_PORTS'].split('-')[0])
+    elif 'SLURM_JOB_ID' in os.environ:
+        # Fallback: If SLURM_STEP_RESV_PORTS is not defined,
+        # select a port from the range 63001-66000, based on the job ID
+        # Using modulo should make it very unlikely,
+        # that two jobs get the same port.
+        job_id = int(os.environ['SLURM_JOB_ID'])
+        PORT_BASE, PORT_SPAN = 63001, 3000
+        _PORT = PORT_BASE + (job_id % PORT_SPAN)
 
-    # I cannot find a proper documentation for SLURM_STEP_RESV_PORTS.
-    # But https://supercloud.mit.edu/tensorboard indicates that it can be used
-    # for used code. So I will use it.
-    # SLURM_STEP_RESV_PORTS=17058-17059
-    _PORT = int(os.environ['SLURM_STEP_RESV_PORTS'].split('-')[0])
+    elif 'SLURM_SRUN_COMM_PORT' in os.environ:
+        # This breaks, if the submit node and the compute nodes are the same.
+        # 
+        # Always the same as SLURM_STEP_LAUNCHER_PORT ?
+        # 
+        # ToDO: Find something better than 'SLURM_SRUN_COMM_PORT'.
+        # It is not guaranteed, that the PORT is free, only very likely.
+        # 
+        # It is not clear, whether the port is free to be used.
+        # Given the fact, that SLURM_SRUN_COMM_HOST is the IP of the submit node in
+        # salloc, it is probably not planned to be used outside of slurm plugins.
+        # 
+        # SLURM_SRUN_COMM_PORT is the port used to communicate with the submit node.
+        # So if the submit node and the compute nodes are different, this should probably
+        # work.
+        # 
+        # _PORT = int(os.environ['SLURM_SRUN_COMM_PORT'])
+        _PORT = int(os.environ['SLURM_SRUN_COMM_PORT'])
+    else:
+        raise RuntimeError(
+            "Cannot find SLURM_STEP_RESV_PORTS, SLURM_JOB_ID or SLURM_SRUN_COMM_PORT "
+            "in the environ."
+        )
 
     ###########################################################################
     # RANK, SIZE and authkey
@@ -69,5 +98,7 @@ def get_host_rank_size():
     authkey = os.getenv(
         "AME_AUTHKEY",
         str_to_authkey(os.environ['SLURM_JOB_START_TIME'] + __file__))
+    if isinstance(authkey, str):
+        authkey = authkey.encode('utf-8')
 
     return _HOST, _PORT, RANK, SIZE, authkey
