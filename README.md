@@ -253,7 +253,7 @@ When that line prints 4 times a zero, something went wrong.
 You can try different launchers
  - `ameexec -np 4 python -m dlp_mpi`  # Simple launcher, that supports a subset of mpiexec
  - `mpiexec -np 4 python -m dlp_mpi`  # Supports multi-node execution
- - `srun -N 1 -n 1 -c 10 -p cpu --gpus 1 srun python -m dlp_mpi`  # recommented in HPC systems. Probably you have to adapt the arguments to the SLURM installation.
+ - `srun -N 1 -n 1 -c 10 -p cpu --gpus 1 srun python -m dlp_mpi`  # recommended in HPC systems. Probably you have to adapt the arguments to the SLURM installation.
 and you can switch between backends, via environment variables
  - `export DLP_MPI_BACKEND=ame`
  - `export DLP_MPI_BACKEND=mpi4py`
