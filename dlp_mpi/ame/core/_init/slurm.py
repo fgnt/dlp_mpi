@@ -76,7 +76,7 @@ def get_host_rank_size():
         # but inside the job, all tasks see the lowest SLURM_JOB_ID.
 
         job_id = int(os.environ['SLURM_JOB_ID'])
-        PORT_BASE, PORT_SPAN = 63001, 3000
+        PORT_BASE, PORT_SPAN = 60001, 3000
         _PORT = PORT_BASE + (job_id % PORT_SPAN)
 
     elif 'SLURM_SRUN_COMM_PORT' in os.environ:
