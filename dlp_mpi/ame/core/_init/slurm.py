@@ -34,7 +34,13 @@ def get_host_rank_size():
     ###########################################################################
     # SLURM_STEP_NODELIST n2cn[0501,0509]
     # Is it correct, that the first node is the one where the rank 0 is running?
-    _HOST = expand_node_list(os.environ['SLURM_STEP_NODELIST'])[0]
+
+    if 'SLURM_JOB_NODELIST_PACK_GROUP_0' in os.environ:
+        # SLURM_JOB_NODELIST_PACK_GROUP_0 is for het jobs,
+        # where the first node in SLURM_STEP_NODELIST may not be the one where rank 0 is running.
+        _HOST = expand_node_list(os.environ['SLURM_JOB_NODELIST_PACK_GROUP_0'])[0]
+    else:
+        _HOST = expand_node_list(os.environ['SLURM_STEP_NODELIST'])[0]
 
     # SLURM_SRUN_COMM_HOST is the IP of the submit node in salloc,
     # hence I got OSError: [Errno 99] Cannot assign requested address
@@ -61,6 +67,14 @@ def get_host_rank_size():
         # select a port from the range 63001-66000, based on the job ID
         # Using modulo should make it very unlikely,
         # that two jobs get the same port.
+
+        # https://slurm.schedmd.com/heterogeneous_jobs.html
+        # claims, that the job ID is not unique in het jobs,
+        # but they are. SLURM_JOB_ID_PACK_GROUP_X are the ones,
+        # that differ.
+        # From the outside, they differ (i.e., the tools report different job IDs),
+        # but inside the job, all tasks see the lowest SLURM_JOB_ID.
+
         job_id = int(os.environ['SLURM_JOB_ID'])
         PORT_BASE, PORT_SPAN = 63001, 3000
         _PORT = PORT_BASE + (job_id % PORT_SPAN)
